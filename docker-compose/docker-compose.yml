@@ -1,0 +1,36 @@
+services:
+  cwa-facilitymanager-web-server:
+    image: ${DOCKER_REGISTRY-}cwafacilitymanagerserver
+    container_name: cwa-facilitymanager-web
+    build:
+      context: ..
+      dockerfile: CWA.FacilityManager.Server/Dockerfile
+    environment:
+      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Logging__LogLevel__Microsoft.Hosting.Lifetime=Information
+    ports:
+      - "8088:8080"  
+      - "7088:8081"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    depends_on:
+      - sqlexpress
+
+  sqlexpress:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: cwa-facilitymanager-sqlexpress
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=ChangePassword123!
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlexpress_data:/var/opt/mssql
+
+volumes:
+  sqlexpress_data:
