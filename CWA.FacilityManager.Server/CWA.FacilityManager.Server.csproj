@@ -10,6 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MailKit" Version="4.13.0" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="SkiaSharp" Version="3.119.0" />
     <ProjectReference Include="..\CWA.FacilityManager.Client\CWA.FacilityManager.Client.csproj" />
     <ProjectReference Include="..\CWA.FacilityManager.Domain\CWA.FacilityManager.Domain.csproj" />
     <ProjectReference Include="..\CWA.FacilityManager.Infrastructure\CWA.FacilityManager.Infrastructure.csproj" />

@@ -105,6 +105,11 @@
             Logger.LogWarning("User account locked out.");
             RedirectManager.RedirectTo("Account/Lockout");
         }
+        else if (result.IsNotAllowed)
+        {
+            Logger.LogWarning("User account not allowed to login - email not confirmed.");
+            errorMessage = "Error: Email not confirmed. Please check your email and confirm your account before logging in.";
+        }
         else
         {
             errorMessage = "Error: Invalid login attempt.";

@@ -53,12 +53,28 @@
     <h4>Authenticator app</h4>
     @if (!hasAuthenticator)
     {
-        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Add authenticator app</a>
+        <div class="alert alert-info">
+            <i class="fas fa-mobile-alt"></i>
+            <strong>Set up an authenticator app for enhanced security</strong>
+            <p class="mb-0">Use an authenticator app like Google Authenticator or Microsoft Authenticator for secure two-factor authentication. We'll generate a QR code to make setup easy!</p>
+        </div>
+        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">
+            <i class="fas fa-qrcode"></i> Add authenticator app
+        </a>
     }
     else
     {
-        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Set up authenticator app</a>
-        <a href="Account/Manage/ResetAuthenticator" class="btn btn-primary">Reset authenticator app</a>
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <strong>Authenticator app configured</strong>
+            <p class="mb-0">Your authenticator app is set up and working. You can reconfigure it if needed.</p>
+        </div>
+        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">
+            <i class="fas fa-cog"></i> Set up authenticator app
+        </a>
+        <a href="Account/Manage/ResetAuthenticator" class="btn btn-warning">
+            <i class="fas fa-redo"></i> Reset authenticator app
+        </a>
     }
 }
 else

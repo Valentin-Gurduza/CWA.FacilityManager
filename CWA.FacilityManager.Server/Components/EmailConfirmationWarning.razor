@@ -1,0 +1,38 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (showWarning)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <h6><i class="fas fa-exclamation-triangle"></i> Limited Access</h6>
+        <p class="mb-2">
+            <strong>Your email address is not yet confirmed.</strong> 
+            Some features may be restricted until you verify your email.
+        </p>
+        <div>
+            <a href="Account/Manage/Email" class="btn btn-sm btn-outline-warning me-2">
+                <i class="fas fa-envelope"></i> Verify Email
+            </a>
+            <a href="Account/ResendEmailConfirmation" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-paper-plane"></i> Resend Confirmation
+            </a>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@code {
+    private bool showWarning = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            // Check if email is not confirmed
+            var emailConfirmedClaim = authState.User.FindFirst("EmailConfirmed");
+            showWarning = emailConfirmedClaim?.Value == "False";
+        }
+    }
+}

@@ -3,6 +3,7 @@ using CWA.FacilityManager.Domain.Models;
 using CWA.FacilityManager.Infrastructure.Contexts;
 using CWA.FacilityManager.Server.Components;
 using CWA.FacilityManager.Server.Components.Account;
+using CWA.FacilityManager.Server.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,19 +24,50 @@ builder.Services.AddAuthentication(options =>
         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
     })
     .AddIdentityCookies();
-builder.Services.AddAuthorization();
+
+// Add authorization with email confirmation policy
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("EmailConfirmed", policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim("EmailConfirmed", "True"));
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddIdentityCore<ApplicationUser>(options => 
+    {
+        // Set email confirmation requirement from configuration
+        // Configure in appsettings.json: "Identity": { "RequireConfirmedAccount": true }
+        options.SignIn.RequireConfirmedAccount = builder.Configuration.GetValue<bool>("Identity:RequireConfirmedAccount", builder.Environment.IsProduction());
+        
+        // Configure password requirements
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = false;
+        
+        // Configure lockout
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.AllowedForNewUsers = true;
+        
+        // Configure email confirmation
+        options.User.RequireUniqueEmail = true;
+    })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
-    .AddDefaultTokenProviders();
+    .AddDefaultTokenProviders()
+    .AddClaimsPrincipalFactory<EmailConfirmedClaimsPrincipalFactory>();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+// Register email service and QR code service
+builder.Services.AddScoped<IEmailSender<ApplicationUser>, EmailService>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, EmailService>();
+builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 
 var app = builder.Build();
 
