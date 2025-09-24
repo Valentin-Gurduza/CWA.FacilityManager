@@ -6,14 +6,17 @@
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using CWA.FacilityManager.Server.Services
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<ApplicationRole> RoleManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ExternalLogin> Logger
+@inject IRoleBasedRedirectService RoleBasedRedirectService
 
 <PageTitle>Register</PageTitle>
 
@@ -102,6 +105,17 @@
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
         }
 
+        // Check if user exists and is active before attempting external login
+        var existingUser = await UserManager.FindByEmailAsync(externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "");
+        if (existingUser != null && !existingUser.IsActive)
+        {
+            Logger.LogWarning("Deactivated user attempted external login: {Email}", existingUser.Email);
+            RedirectManager.RedirectToWithStatus("Account/Login", 
+                "Your account has been deactivated by a staff member. Please contact your system administrator to reactivate your account.", 
+                HttpContext);
+            return;
+        }
+
         // Sign in the user with this external login provider if the user already has a login.
         var result = await SignInManager.ExternalLoginSignInAsync(
             externalLoginInfo.LoginProvider,
@@ -115,7 +129,26 @@
                 "{Name} logged in with {LoginProvider} provider.",
                 externalLoginInfo.Principal.Identity?.Name,
                 externalLoginInfo.LoginProvider);
-            RedirectManager.RedirectTo(ReturnUrl);
+                
+            // Update last login time for external login users
+            if (existingUser != null)
+            {
+                existingUser.LastLoginAt = DateTime.UtcNow;
+                await UserManager.UpdateAsync(existingUser);
+                
+                // Create claims principal to check user permissions for redirect
+                var claimsPrincipal = await SignInManager.CreateUserPrincipalAsync(existingUser);
+                
+                // Validate return URL based on user's roles
+                var validReturnUrl = await RoleBasedRedirectService.GetValidReturnUrlAsync(ReturnUrl, claimsPrincipal);
+                
+                Logger.LogInformation("User {Email} (External Login) redirected to: {ReturnUrl}", existingUser.Email, validReturnUrl);
+                RedirectManager.RedirectTo(validReturnUrl);
+            }
+            else
+            {
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
         }
         else if (result.IsLockedOut)
         {
@@ -150,6 +183,34 @@
             {
                 Logger.LogInformation("User created an account using {Name} provider.", externalLoginInfo.LoginProvider);
 
+                // Automatically assign Renter role to new users (external login)
+                try
+                {
+                    var renterRole = await RoleManager.FindByNameAsync("Renter");
+                    if (renterRole != null && renterRole.IsActive)
+                    {
+                        var roleResult = await UserManager.AddToRoleAsync(user, "Renter");
+                        if (roleResult.Succeeded)
+                        {
+                            Logger.LogInformation("External login user {Email} automatically assigned Renter role", user.Email);
+                        }
+                        else
+                        {
+                            Logger.LogWarning("Failed to assign Renter role to external login user {Email}: {Errors}", 
+                                user.Email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogWarning("Renter role not found or inactive. Cannot assign to external login user {Email}", user.Email);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error assigning Renter role to external login user {Email}", user.Email);
+                    // Don't fail registration if role assignment fails
+                }
+
                 var userId = await UserManager.GetUserIdAsync(user);
                 var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
                 code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -168,7 +229,14 @@
                     return;
                 }
 
-                RedirectManager.RedirectTo(ReturnUrl);
+                // Create claims principal to check user permissions for redirect
+                var claimsPrincipal = await SignInManager.CreateUserPrincipalAsync(user);
+                
+                // Validate return URL based on user's roles (new user will have Renter role)
+                var validReturnUrl = await RoleBasedRedirectService.GetValidReturnUrlAsync(ReturnUrl, claimsPrincipal);
+                
+                Logger.LogInformation("New user {Email} (External Login Registration) redirected to: {ReturnUrl}", user.Email, validReturnUrl);
+                RedirectManager.RedirectTo(validReturnUrl);
             }
         }
 

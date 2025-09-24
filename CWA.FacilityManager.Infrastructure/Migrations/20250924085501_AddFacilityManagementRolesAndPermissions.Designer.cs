@@ -4,6 +4,7 @@ using CWA.FacilityManager.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CWA.FacilityManager.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250924085501_AddFacilityManagementRolesAndPermissions")]
+    partial class AddFacilityManagementRolesAndPermissions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -89,7 +92,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "550e8400-e29b-41d4-a716-446655440001",
+                            Id = "76d9321f-5a6f-4062-aebc-77dcd9555b7c",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "System administrator with full access to all features",
                             IsActive = true,
@@ -101,7 +104,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "550e8400-e29b-41d4-a716-446655440002",
+                            Id = "83dd095f-6534-413a-b6aa-d64d6840deac",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Secretary with access to manage bookings, view reports, and manage facilities",
                             IsActive = true,
@@ -113,7 +116,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = "550e8400-e29b-41d4-a716-446655440003",
+                            Id = "c08376e7-c0b2-4ad4-9fe2-69209dcaa16d",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Renter with access to view facilities and create booking requests",
                             IsActive = true,

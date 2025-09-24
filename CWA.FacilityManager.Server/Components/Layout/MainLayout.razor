@@ -1,4 +1,6 @@
-﻿@inherits LayoutComponentBase
+﻿@using CWA.FacilityManager.Server.Components.Layout
+@using CWA.FacilityManager.Server.Components.Account.Shared
+@inherits LayoutComponentBase
 
 <div class="page">
     <div class="sidebar">
@@ -6,10 +8,6 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
         <article class="content px-4">
             <EmailConfirmationWarning />
             @Body
@@ -17,8 +15,11 @@
     </main>
 </div>
 
-<div id="blazor-error-ui" data-nosnippet>
+<div id="blazor-error-ui">
     An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
 </div>
+
+<!-- Add Authentication Status Checker for Security -->
+<CWA.FacilityManager.Server.Components.AuthenticationStatusChecker />

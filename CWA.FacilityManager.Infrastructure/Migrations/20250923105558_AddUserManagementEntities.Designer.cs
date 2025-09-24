@@ -4,6 +4,7 @@ using CWA.FacilityManager.Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CWA.FacilityManager.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250923105558_AddUserManagementEntities")]
+    partial class AddUserManagementEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,9 +69,6 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.Property<int>("Priority")
                         .HasColumnType("int");
 
-                    b.Property<int>("RoleType")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("IsActive");
@@ -82,47 +82,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
 
                     b.HasIndex("Priority");
 
-                    b.HasIndex("RoleType");
-
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "550e8400-e29b-41d4-a716-446655440001",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "System administrator with full access to all features",
-                            IsActive = true,
-                            IsSystemRole = true,
-                            Name = "Administrator",
-                            NormalizedName = "ADMINISTRATOR",
-                            Priority = 100,
-                            RoleType = 2
-                        },
-                        new
-                        {
-                            Id = "550e8400-e29b-41d4-a716-446655440002",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Secretary with access to manage bookings, view reports, and manage facilities",
-                            IsActive = true,
-                            IsSystemRole = true,
-                            Name = "Secretary",
-                            NormalizedName = "SECRETARY",
-                            Priority = 80,
-                            RoleType = 3
-                        },
-                        new
-                        {
-                            Id = "550e8400-e29b-41d4-a716-446655440003",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Renter with access to view facilities and create booking requests",
-                            IsActive = true,
-                            IsSystemRole = true,
-                            Name = "Renter",
-                            NormalizedName = "RENTER",
-                            Priority = 60,
-                            RoleType = 4
-                        });
                 });
 
             modelBuilder.Entity("CWA.FacilityManager.Domain.Models.ApplicationUser", b =>
@@ -300,7 +260,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 1,
                             Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6177),
                             Description = "Permission to view users",
                             DisplayName = "View Users",
                             IsSystemPermission = true,
@@ -312,7 +272,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 2,
                             Action = "Create",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6517),
                             Description = "Permission to create users",
                             DisplayName = "Create Users",
                             IsSystemPermission = true,
@@ -324,7 +284,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 3,
                             Action = "Edit",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6522),
                             Description = "Permission to edit users",
                             DisplayName = "Edit Users",
                             IsSystemPermission = true,
@@ -336,7 +296,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 4,
                             Action = "Delete",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6524),
                             Description = "Permission to delete users",
                             DisplayName = "Delete Users",
                             IsSystemPermission = true,
@@ -348,7 +308,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 5,
                             Action = "Assign",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6559),
                             Description = "Permission to assign users",
                             DisplayName = "Assign Users",
                             IsSystemPermission = true,
@@ -360,7 +320,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 6,
                             Action = "Unassign",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6576),
                             Description = "Permission to unassign users",
                             DisplayName = "Unassign Users",
                             IsSystemPermission = true,
@@ -372,7 +332,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 7,
                             Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6580),
                             Description = "Permission to view roles",
                             DisplayName = "View Roles",
                             IsSystemPermission = true,
@@ -384,7 +344,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 8,
                             Action = "Create",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6582),
                             Description = "Permission to create roles",
                             DisplayName = "Create Roles",
                             IsSystemPermission = true,
@@ -396,7 +356,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 9,
                             Action = "Edit",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6583),
                             Description = "Permission to edit roles",
                             DisplayName = "Edit Roles",
                             IsSystemPermission = true,
@@ -408,7 +368,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 10,
                             Action = "Delete",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6586),
                             Description = "Permission to delete roles",
                             DisplayName = "Delete Roles",
                             IsSystemPermission = true,
@@ -420,7 +380,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 11,
                             Action = "AssignPermissions",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6588),
                             Description = "Permission to assignpermissions roles",
                             DisplayName = "AssignPermissions Roles",
                             IsSystemPermission = true,
@@ -432,7 +392,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 12,
                             Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6592),
                             Description = "Permission to view permissions",
                             DisplayName = "View Permissions",
                             IsSystemPermission = true,
@@ -444,7 +404,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 13,
                             Action = "Create",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6594),
                             Description = "Permission to create permissions",
                             DisplayName = "Create Permissions",
                             IsSystemPermission = true,
@@ -456,7 +416,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 14,
                             Action = "Delete",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6596),
                             Description = "Permission to delete permissions",
                             DisplayName = "Delete Permissions",
                             IsSystemPermission = true,
@@ -468,7 +428,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 15,
                             Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6599),
                             Description = "Permission to view facilities",
                             DisplayName = "View Facilities",
                             IsSystemPermission = true,
@@ -480,7 +440,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 16,
                             Action = "Create",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6601),
                             Description = "Permission to create facilities",
                             DisplayName = "Create Facilities",
                             IsSystemPermission = true,
@@ -492,7 +452,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 17,
                             Action = "Edit",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6603),
                             Description = "Permission to edit facilities",
                             DisplayName = "Edit Facilities",
                             IsSystemPermission = true,
@@ -504,337 +464,13 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         {
                             Id = 18,
                             Action = "Delete",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2025, 9, 23, 10, 55, 56, 671, DateTimeKind.Utc).AddTicks(6605),
                             Description = "Permission to delete facilities",
                             DisplayName = "Delete Facilities",
                             IsSystemPermission = true,
                             Module = "FacilityManagement",
                             Name = "FacilityManagement.Facilities.Delete",
                             Resource = "Facilities"
-                        },
-                        new
-                        {
-                            Id = 19,
-                            Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to view rooms",
-                            DisplayName = "View Rooms",
-                            IsSystemPermission = true,
-                            Module = "FacilityManagement",
-                            Name = "FacilityManagement.Rooms.View",
-                            Resource = "Rooms"
-                        },
-                        new
-                        {
-                            Id = 20,
-                            Action = "Create",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to create rooms",
-                            DisplayName = "Create Rooms",
-                            IsSystemPermission = true,
-                            Module = "FacilityManagement",
-                            Name = "FacilityManagement.Rooms.Create",
-                            Resource = "Rooms"
-                        },
-                        new
-                        {
-                            Id = 21,
-                            Action = "Edit",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to edit rooms",
-                            DisplayName = "Edit Rooms",
-                            IsSystemPermission = true,
-                            Module = "FacilityManagement",
-                            Name = "FacilityManagement.Rooms.Edit",
-                            Resource = "Rooms"
-                        },
-                        new
-                        {
-                            Id = 22,
-                            Action = "Delete",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to delete rooms",
-                            DisplayName = "Delete Rooms",
-                            IsSystemPermission = true,
-                            Module = "FacilityManagement",
-                            Name = "FacilityManagement.Rooms.Delete",
-                            Resource = "Rooms"
-                        },
-                        new
-                        {
-                            Id = 23,
-                            Action = "ViewSchedule",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to viewschedule rooms",
-                            DisplayName = "ViewSchedule Rooms",
-                            IsSystemPermission = true,
-                            Module = "FacilityManagement",
-                            Name = "FacilityManagement.Rooms.ViewSchedule",
-                            Resource = "Rooms"
-                        },
-                        new
-                        {
-                            Id = 24,
-                            Action = "ManageSchedule",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to manageschedule rooms",
-                            DisplayName = "ManageSchedule Rooms",
-                            IsSystemPermission = true,
-                            Module = "FacilityManagement",
-                            Name = "FacilityManagement.Rooms.ManageSchedule",
-                            Resource = "Rooms"
-                        },
-                        new
-                        {
-                            Id = 25,
-                            Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to view events",
-                            DisplayName = "View Events",
-                            IsSystemPermission = true,
-                            Module = "EventManagement",
-                            Name = "EventManagement.Events.View",
-                            Resource = "Events"
-                        },
-                        new
-                        {
-                            Id = 26,
-                            Action = "Create",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to create events",
-                            DisplayName = "Create Events",
-                            IsSystemPermission = true,
-                            Module = "EventManagement",
-                            Name = "EventManagement.Events.Create",
-                            Resource = "Events"
-                        },
-                        new
-                        {
-                            Id = 27,
-                            Action = "Edit",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to edit events",
-                            DisplayName = "Edit Events",
-                            IsSystemPermission = true,
-                            Module = "EventManagement",
-                            Name = "EventManagement.Events.Edit",
-                            Resource = "Events"
-                        },
-                        new
-                        {
-                            Id = 28,
-                            Action = "Delete",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to delete events",
-                            DisplayName = "Delete Events",
-                            IsSystemPermission = true,
-                            Module = "EventManagement",
-                            Name = "EventManagement.Events.Delete",
-                            Resource = "Events"
-                        },
-                        new
-                        {
-                            Id = 29,
-                            Action = "Approve",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to approve events",
-                            DisplayName = "Approve Events",
-                            IsSystemPermission = true,
-                            Module = "EventManagement",
-                            Name = "EventManagement.Events.Approve",
-                            Resource = "Events"
-                        },
-                        new
-                        {
-                            Id = 30,
-                            Action = "Reject",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to reject events",
-                            DisplayName = "Reject Events",
-                            IsSystemPermission = true,
-                            Module = "EventManagement",
-                            Name = "EventManagement.Events.Reject",
-                            Resource = "Events"
-                        },
-                        new
-                        {
-                            Id = 31,
-                            Action = "Cancel",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to cancel events",
-                            DisplayName = "Cancel Events",
-                            IsSystemPermission = true,
-                            Module = "EventManagement",
-                            Name = "EventManagement.Events.Cancel",
-                            Resource = "Events"
-                        },
-                        new
-                        {
-                            Id = 32,
-                            Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to view bookings",
-                            DisplayName = "View Bookings",
-                            IsSystemPermission = true,
-                            Module = "BookingManagement",
-                            Name = "BookingManagement.Bookings.View",
-                            Resource = "Bookings"
-                        },
-                        new
-                        {
-                            Id = 33,
-                            Action = "Create",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to create bookings",
-                            DisplayName = "Create Bookings",
-                            IsSystemPermission = true,
-                            Module = "BookingManagement",
-                            Name = "BookingManagement.Bookings.Create",
-                            Resource = "Bookings"
-                        },
-                        new
-                        {
-                            Id = 34,
-                            Action = "Edit",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to edit bookings",
-                            DisplayName = "Edit Bookings",
-                            IsSystemPermission = true,
-                            Module = "BookingManagement",
-                            Name = "BookingManagement.Bookings.Edit",
-                            Resource = "Bookings"
-                        },
-                        new
-                        {
-                            Id = 35,
-                            Action = "Delete",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to delete bookings",
-                            DisplayName = "Delete Bookings",
-                            IsSystemPermission = true,
-                            Module = "BookingManagement",
-                            Name = "BookingManagement.Bookings.Delete",
-                            Resource = "Bookings"
-                        },
-                        new
-                        {
-                            Id = 36,
-                            Action = "ViewAll",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to viewall bookings",
-                            DisplayName = "ViewAll Bookings",
-                            IsSystemPermission = true,
-                            Module = "BookingManagement",
-                            Name = "BookingManagement.Bookings.ViewAll",
-                            Resource = "Bookings"
-                        },
-                        new
-                        {
-                            Id = 37,
-                            Action = "Approve",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to approve bookings",
-                            DisplayName = "Approve Bookings",
-                            IsSystemPermission = true,
-                            Module = "BookingManagement",
-                            Name = "BookingManagement.Bookings.Approve",
-                            Resource = "Bookings"
-                        },
-                        new
-                        {
-                            Id = 38,
-                            Action = "Reject",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to reject bookings",
-                            DisplayName = "Reject Bookings",
-                            IsSystemPermission = true,
-                            Module = "BookingManagement",
-                            Name = "BookingManagement.Bookings.Reject",
-                            Resource = "Bookings"
-                        },
-                        new
-                        {
-                            Id = 39,
-                            Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to view reports",
-                            DisplayName = "View Reports",
-                            IsSystemPermission = true,
-                            Module = "ReportManagement",
-                            Name = "ReportManagement.Reports.View",
-                            Resource = "Reports"
-                        },
-                        new
-                        {
-                            Id = 40,
-                            Action = "Generate",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to generate reports",
-                            DisplayName = "Generate Reports",
-                            IsSystemPermission = true,
-                            Module = "ReportManagement",
-                            Name = "ReportManagement.Reports.Generate",
-                            Resource = "Reports"
-                        },
-                        new
-                        {
-                            Id = 41,
-                            Action = "Export",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to export reports",
-                            DisplayName = "Export Reports",
-                            IsSystemPermission = true,
-                            Module = "ReportManagement",
-                            Name = "ReportManagement.Reports.Export",
-                            Resource = "Reports"
-                        },
-                        new
-                        {
-                            Id = 42,
-                            Action = "View",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to view system configuration",
-                            DisplayName = "View Configuration",
-                            IsSystemPermission = true,
-                            Module = "SystemManagement",
-                            Name = "SystemManagement.Configuration.View",
-                            Resource = "Configuration"
-                        },
-                        new
-                        {
-                            Id = 43,
-                            Action = "Edit",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to edit system configuration",
-                            DisplayName = "Edit Configuration",
-                            IsSystemPermission = true,
-                            Module = "SystemManagement",
-                            Name = "SystemManagement.Configuration.Edit",
-                            Resource = "Configuration"
-                        },
-                        new
-                        {
-                            Id = 44,
-                            Action = "Backup",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to backup system configuration",
-                            DisplayName = "Backup Configuration",
-                            IsSystemPermission = true,
-                            Module = "SystemManagement",
-                            Name = "SystemManagement.Configuration.Backup",
-                            Resource = "Configuration"
-                        },
-                        new
-                        {
-                            Id = 45,
-                            Action = "Restore",
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Permission to restore system configuration",
-                            DisplayName = "Restore Configuration",
-                            IsSystemPermission = true,
-                            Module = "SystemManagement",
-                            Name = "SystemManagement.Configuration.Restore",
-                            Resource = "Configuration"
                         });
                 });
 

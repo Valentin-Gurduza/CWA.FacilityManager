@@ -5,11 +5,12 @@ using Microsoft.Extensions.Options;
 
 namespace CWA.FacilityManager.Server.Services
 {
-    public class EmailConfirmedClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser>
+    public class EmailConfirmedClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, ApplicationRole>
     {
         public EmailConfirmedClaimsPrincipalFactory(
             UserManager<ApplicationUser> userManager,
-            IOptions<IdentityOptions> optionsAccessor) : base(userManager, optionsAccessor)
+            RoleManager<ApplicationRole> roleManager,
+            IOptions<IdentityOptions> optionsAccessor) : base(userManager, roleManager, optionsAccessor)
         {
         }
 
@@ -26,6 +27,12 @@ namespace CWA.FacilityManager.Server.Services
             {
                 identity.AddClaim(new Claim("EmailConfirmed", "False"));
             }
+
+            // Add user active status claim - CRITICAL for preventing deactivated users from accessing the system
+            identity.AddClaim(new Claim("IsActive", user.IsActive.ToString()));
+            
+            // Add user ID for easy access
+            identity.AddClaim(new Claim("UserId", user.Id));
 
             return identity;
         }

@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 
 @inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<ApplicationRole> RoleManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IEmailSender<ApplicationUser> EmailSender
@@ -80,6 +81,34 @@
         }
 
         Logger.LogInformation("User created a new account with password.");
+
+        // Automatically assign Renter role to new users
+        try
+        {
+            var renterRole = await RoleManager.FindByNameAsync("Renter");
+            if (renterRole != null && renterRole.IsActive)
+            {
+                var roleResult = await UserManager.AddToRoleAsync(user, "Renter");
+                if (roleResult.Succeeded)
+                {
+                    Logger.LogInformation("User {Email} automatically assigned Renter role", user.Email);
+                }
+                else
+                {
+                    Logger.LogWarning("Failed to assign Renter role to user {Email}: {Errors}", 
+                        user.Email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                }
+            }
+            else
+            {
+                Logger.LogWarning("Renter role not found or inactive. Cannot assign to user {Email}", user.Email);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error assigning Renter role to user {Email}", user.Email);
+            // Don't fail registration if role assignment fails
+        }
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
