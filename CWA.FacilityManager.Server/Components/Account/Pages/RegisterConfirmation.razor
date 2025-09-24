@@ -9,26 +9,45 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Register confirmation</PageTitle>
+<PageTitle>Email Confirmation Required</PageTitle>
 
-<h1>Register confirmation</h1>
+<h1>Welcome! Almost there...</h1>
 
 <StatusMessage Message="@statusMessage" />
 
-@if (emailConfirmationLink is not null)
-{
-    <p>
-        This app does not currently have a real email sender registered, see <a href="https://aka.ms/aspaccountconf">these docs</a> for how to configure a real email sender.
-        Normally this would be emailed: <a href="@emailConfirmationLink">Click here to confirm your account</a>
-    </p>
-}
-else
-{
-    <p role="alert">Please check your email to confirm your account.</p>
-}
+<div class="alert alert-success">
+    <h4><i class="fas fa-check-circle"></i> Account Created Successfully!</h4>
+    <p>Welcome! Your account has been created and you are now logged in.</p>
+</div>
+
+<div class="alert alert-info">
+    <h4><i class="fas fa-envelope"></i> Email Confirmation Required</h4>
+    <p>We've sent a confirmation email to <strong>@Email</strong>.</p>
+    <p>While you can browse the application, <strong>some features will be limited until you confirm your email address</strong>.</p>
+    <p>Please check your email and click the confirmation link to unlock all features.</p>
+    <p>If you don't see the email, please check your spam folder.</p>
+</div>
+
+<div class="alert alert-warning">
+    <h5><i class="fas fa-info-circle"></i> Important:</h5>
+    <ul>
+        <li>You are currently logged in with limited access</li>
+        <li>Full access will be granted after email confirmation</li>
+        <li>The confirmation link will expire in 24 hours</li>
+        <li>If you need to resend the confirmation email, <a href="Account/ResendEmailConfirmation">click here</a></li>
+    </ul>
+</div>
+
+<div class="mt-4">
+    <a href="/" class="btn btn-primary">
+        <i class="fas fa-home"></i> Continue to Application
+    </a>
+    <a href="Account/ResendEmailConfirmation?email=@Email" class="btn btn-outline-secondary ms-2">
+        <i class="fas fa-paper-plane"></i> Resend Confirmation Email
+    </a>
+</div>
 
 @code {
-    private string? emailConfirmationLink;
     private string? statusMessage;
 
     [CascadingParameter]
@@ -52,16 +71,6 @@ else
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
             statusMessage = "Error finding user for unspecified email";
-        }
-        else if (EmailSender is IdentityNoOpEmailSender)
-        {
-            // Once you add a real email sender, you should remove this code that lets you confirm the account
-            var userId = await UserManager.GetUserIdAsync(user);
-            var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            emailConfirmationLink = NavigationManager.GetUriWithQueryParameters(
-                NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
-                new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
         }
     }
 }

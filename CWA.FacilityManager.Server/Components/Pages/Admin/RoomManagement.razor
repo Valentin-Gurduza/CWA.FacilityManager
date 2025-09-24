@@ -1,0 +1,299 @@
+@page "/admin/rooms"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Policy = "ActiveAdminOrSecretary")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Room Management</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">
+                    <i class="bi bi-door-open-fill me-2 text-primary"></i>Room Management
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-calendar-week me-2"></i>View Schedule
+                    </button>
+                    <button class="btn btn-primary">
+                        <i class="bi bi-plus-square-fill me-2"></i>Add New Room
+                    </button>
+                </div>
+            </div>
+
+            <!-- Room Statistics -->
+            <div class="row mb-4">
+                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                    <div class="card text-center bg-light">
+                        <div class="card-body py-3">
+                            <i class="bi bi-door-open text-primary" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0">48</h4>
+                            <small class="text-muted">Total Rooms</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                    <div class="card text-center bg-light">
+                        <div class="card-body py-3">
+                            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0">42</h4>
+                            <small class="text-muted">Available</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                    <div class="card text-center bg-light">
+                        <div class="card-body py-3">
+                            <i class="bi bi-calendar-event text-info" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0">5</h4>
+                            <small class="text-muted">Booked Today</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                    <div class="card text-center bg-light">
+                        <div class="card-body py-3">
+                            <i class="bi bi-tools text-warning" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0">1</h4>
+                            <small class="text-muted">Maintenance</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                    <div class="card text-center bg-light">
+                        <div class="card-body py-3">
+                            <i class="bi bi-people text-secondary" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0">1,248</h4>
+                            <small class="text-muted">Total Capacity</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                    <div class="card text-center bg-light">
+                        <div class="card-body py-3">
+                            <i class="bi bi-percent text-success" style="font-size: 2rem;"></i>
+                            <h4 class="mt-2 mb-0">87%</h4>
+                            <small class="text-muted">Utilization</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" placeholder="Search rooms..." />
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select">
+                                <option value="">All Facilities</option>
+                                <option value="1">Facility 1</option>
+                                <option value="2">Facility 2</option>
+                                <option value="3">Facility 3</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select">
+                                <option value="">All Types</option>
+                                <option value="conference">Conference Room</option>
+                                <option value="meeting">Meeting Room</option>
+                                <option value="training">Training Room</option>
+                                <option value="event">Event Hall</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select">
+                                <option value="">All Status</option>
+                                <option value="available">Available</option>
+                                <option value="booked">Booked</option>
+                                <option value="maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control" placeholder="Min capacity" min="1" />
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-outline-primary w-100">
+                                <i class="bi bi-funnel-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rooms Table -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Rooms (48)</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <input type="radio" class="btn-check" name="viewOptions" id="tableView" autocomplete="off" checked>
+                            <label class="btn btn-outline-secondary" for="tableView">
+                                <i class="bi bi-table"></i> Table
+                            </label>
+                            <input type="radio" class="btn-check" name="viewOptions" id="cardView" autocomplete="off">
+                            <label class="btn btn-outline-secondary" for="cardView">
+                                <i class="bi bi-grid-3x3-gap"></i> Cards
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Room Name</th>
+                                    <th>Facility</th>
+                                    <th>Type</th>
+                                    <th>Capacity</th>
+                                    <th>Equipment</th>
+                                    <th>Status</th>
+                                    <th>Next Booking</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 1; i <= 12; i++)
+                                {
+                                    var statusClass = i % 4 == 0 ? "warning" : (i % 6 == 0 ? "danger" : "success");
+                                    var statusText = i % 4 == 0 ? "Maintenance" : (i % 6 == 0 ? "Booked" : "Available");
+                                    var statusIcon = i % 4 == 0 ? "tools" : (i % 6 == 0 ? "calendar-event" : "check-circle");
+                                    
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-door-open text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-medium">Conference Room @i</div>
+                                                    <small class="text-muted">Floor @((i - 1) % 3 + 1)</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>Facility @((i - 1) % 4 + 1)</td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                @(i % 3 == 0 ? "Training" : (i % 2 == 0 ? "Meeting" : "Conference"))
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-people-fill me-1"></i>@(i * 5 + 10)
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <span class="badge bg-light text-dark" title="Projector">
+                                                    <i class="bi bi-display"></i>
+                                                </span>
+                                                <span class="badge bg-light text-dark" title="Video Conference">
+                                                    <i class="bi bi-camera-video"></i>
+                                                </span>
+                                                @if (i % 2 == 0)
+                                                {
+                                                    <span class="badge bg-light text-dark" title="Whiteboard">
+                                                        <i class="bi bi-easel"></i>
+                                                    </span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-@statusClass">
+                                                <i class="bi bi-@statusIcon me-1"></i>@statusText
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (i % 6 != 0)
+                                            {
+                                                <small class="text-muted">
+                                                    Tomorrow 10:00 AM<br>
+                                                    <span class="text-primary">Team Meeting</span>
+                                                </small>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-danger">Currently in use</small>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                        type="button" data-bs-toggle="dropdown">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li><a class="dropdown-item" href="#">
+                                                        <i class="bi bi-eye-fill me-2"></i>View Details
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="#">
+                                                        <i class="bi bi-calendar-week me-2"></i>View Schedule
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="#">
+                                                        <i class="bi bi-calendar-plus me-2"></i>Book Room
+                                                    </a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item" href="#">
+                                                        <i class="bi bi-pencil-fill me-2"></i>Edit Room
+                                                    </a></li>
+                                                    @if (statusText == "Available")
+                                                    {
+                                                        <li><a class="dropdown-item text-warning" href="#">
+                                                            <i class="bi bi-tools me-2"></i>Mark for Maintenance
+                                                        </a></li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Showing 1-12 of 48 rooms</small>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                                <li class="page-item active">
+                                    <span class="page-link">1</span>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">2</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">3</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">4</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Placeholder for future implementation
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.CompletedTask;
+    }
+}

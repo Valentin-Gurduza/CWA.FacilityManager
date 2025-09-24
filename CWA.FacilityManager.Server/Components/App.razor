@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["CWA.FacilityManager.Server.styles.css"]" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -17,6 +18,54 @@
 <body>
     <Routes />
     <script src="@Assets["lib/bootstrap/dist/js/bootstrap.bundle.min.js"]"></script>
+    <script>
+        // Fix dropdown positioning in tables
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle dropdown positioning
+            document.addEventListener('show.bs.dropdown', function(event) {
+                const dropdown = event.target;
+                const dropdownMenu = dropdown.nextElementSibling;
+                
+                if (dropdown.closest('.table')) {
+                    const rect = dropdown.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const spaceBelow = viewportHeight - rect.bottom;
+                    const menuHeight = 250; // Approximate dropdown menu height
+                    
+                    // Force dropdown to use fixed positioning
+                    dropdownMenu.style.position = 'fixed';
+                    dropdownMenu.style.zIndex = '9999';
+                    
+                    // Calculate position
+                    if (spaceBelow < menuHeight) {
+                        // Show above
+                        dropdownMenu.style.top = 'auto';
+                        dropdownMenu.style.bottom = (viewportHeight - rect.top + 5) + 'px';
+                        dropdownMenu.style.left = (rect.left - dropdownMenu.offsetWidth + rect.width) + 'px';
+                        dropdownMenu.classList.add('dropdown-menu-up');
+                    } else {
+                        // Show below
+                        dropdownMenu.style.top = (rect.bottom + 5) + 'px';
+                        dropdownMenu.style.bottom = 'auto';
+                        dropdownMenu.style.left = (rect.left - dropdownMenu.offsetWidth + rect.width) + 'px';
+                        dropdownMenu.classList.remove('dropdown-menu-up');
+                    }
+                }
+            });
+            
+            // Clean up positioning when dropdown is hidden
+            document.addEventListener('hidden.bs.dropdown', function(event) {
+                const dropdownMenu = event.target.nextElementSibling;
+                if (dropdownMenu) {
+                    dropdownMenu.style.position = '';
+                    dropdownMenu.style.top = '';
+                    dropdownMenu.style.bottom = '';
+                    dropdownMenu.style.left = '';
+                    dropdownMenu.style.zIndex = '';
+                }
+            });
+        });
+    </script>
     <script src="_framework/blazor.web.js"></script>
 </body>
 

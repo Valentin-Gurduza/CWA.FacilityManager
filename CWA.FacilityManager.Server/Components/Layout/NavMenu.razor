@@ -1,4 +1,5 @@
 ﻿@implements IDisposable
+@rendermode InteractiveServer
 
 @inject NavigationManager NavigationManager
 
@@ -14,7 +15,7 @@
     <nav class="nav flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill-nav-menu me-2" aria-hidden="true"></span> Home
             </NavLink>
         </div>
 
@@ -35,27 +36,167 @@
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+                <span class="bi bi-plus-square-fill-nav-menu me-2" aria-hidden="true"></span> Counter
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+                <span class="bi bi-list-nested-nav-menu me-2" aria-hidden="true"></span> Weather
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
+                <span class="bi bi-lock-nav-menu me-2" aria-hidden="true"></span> Auth Required
             </NavLink>
         </div>
 
-        <AuthorizeView>
+        <AuthorizeView Context="mainAuth" Policy="ActiveUser">
             <Authorized>
-                <div class="nav-item px-3">
+                <!-- Administration Section - For Administrator and Secretary roles with Active status -->
+                <AuthorizeView Roles="Administrator,Secretary" Context="adminAuth" Policy="ActiveAdminOrSecretary">
+                    <Authorized>
+                        <div class="nav-item px-3 mt-3">
+                            <div class="admin-menu-header nav-link text-light fw-bold border-bottom border-secondary mb-2" 
+                                 style="cursor: pointer; user-select: none;"
+                                 @onclick="ToggleAdministration"
+                                 @onclick:preventDefault="true">
+                                <div class="d-flex align-items-center justify-content-between w-100">
+                                    <div class="d-flex align-items-center">
+                                        <span class="bi bi-gear-fill me-2" aria-hidden="true"></span>
+                                        <span>Administration</span>
+                                    </div>
+                                    <span class="bi @(isAdministrationExpanded ? "bi-chevron-up" : "bi-chevron-down") dropdown-icon" aria-hidden="true"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if (isAdministrationExpanded)
+                        {
+                            <div class="admin-submenu">
+                                <!-- User Management - Available for both Administrator and Secretary -->
+                                <div class="nav-item px-3 ps-4">
+                                    <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/users">
+                                        <span class="bi bi-people-fill me-2" aria-hidden="true"></span>
+                                        <span>User Management</span>
+                                    </NavLink>
+                                </div>
+                                        
+                                <!-- Role Management - Only for Administrator -->
+                                <AuthorizeView Roles="Administrator" Context="roleMgmtAuth" Policy="ActiveAdmin">
+                                    <Authorized>
+                                        <div class="nav-item px-3 ps-4">
+                                            <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/roles">
+                                                <span class="bi bi-shield-check me-2" aria-hidden="true"></span>
+                                                <span>Role Management</span>
+                                            </NavLink>
+                                        </div>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        }
+                    </Authorized>
+                </AuthorizeView>
+
+                <!-- Facility Management Section - For Administrator and Secretary roles -->
+                <AuthorizeView Roles="Administrator,Secretary" Context="facilityAuth" Policy="ActiveAdminOrSecretary">
+                    <Authorized>
+                        <div class="nav-item px-3 mt-3">
+                            <div class="admin-menu-header nav-link text-light fw-bold border-bottom border-secondary mb-2" 
+                                 style="cursor: pointer; user-select: none;"
+                                 @onclick="ToggleFacilityManagement"
+                                 @onclick:preventDefault="true">
+                                <div class="d-flex align-items-center justify-content-between w-100">
+                                    <div class="d-flex align-items-center">
+                                        <span class="bi bi-building-fill me-2" aria-hidden="true"></span>
+                                        <span>Facility Management</span>
+                                    </div>
+                                    <span class="bi @(isFacilityManagementExpanded ? "bi-chevron-up" : "bi-chevron-down") dropdown-icon" aria-hidden="true"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if (isFacilityManagementExpanded)
+                        {
+                            <div class="admin-submenu">
+                                <!-- Facilities -->
+                                <div class="nav-item px-3 ps-4">
+                                    <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/facilities">
+                                        <span class="bi bi-building me-2" aria-hidden="true"></span>
+                                        <span>Facilities</span>
+                                    </NavLink>
+                                </div>
+                                
+                                <!-- Rooms -->
+                                <div class="nav-item px-3 ps-4">
+                                    <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/rooms">
+                                        <span class="bi bi-door-open me-2" aria-hidden="true"></span>
+                                        <span>Rooms</span>
+                                    </NavLink>
+                                </div>
+                                
+                                <!-- Bookings -->
+                                <div class="nav-item px-3 ps-4">
+                                    <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/bookings">
+                                        <span class="bi bi-calendar-check me-2" aria-hidden="true"></span>
+                                        <span>Bookings</span>
+                                    </NavLink>
+                                </div>
+                                
+                                <!-- Events -->
+                                <div class="nav-item px-3 ps-4">
+                                    <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/events">
+                                        <span class="bi bi-calendar-event me-2" aria-hidden="true"></span>
+                                        <span>Events</span>
+                                    </NavLink>
+                                </div>
+                                
+                                <!-- Reports -->
+                                <div class="nav-item px-3 ps-4">
+                                    <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/reports">
+                                        <span class="bi bi-graph-up me-2" aria-hidden="true"></span>
+                                        <span>Reports & Analytics</span>
+                                    </NavLink>
+                                </div>
+                            </div>
+                        }
+                    </Authorized>
+                </AuthorizeView>
+
+                <!-- Renter-specific quick access (for Renters who don't see Administration) -->
+                <AuthorizeView Roles="Renter" Context="renterAuth" Policy="ActiveUser">
+                    <Authorized>
+                        <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary">
+                            <div class="text-light fw-bold mb-2">
+                                <span class="bi bi-calendar-check me-2" aria-hidden="true"></span> Quick Access
+                            </div>
+                        </div>
+                        
+                        <div class="nav-item px-3 ps-4 renter-only">
+                            <NavLink class="nav-link" href="facilities">
+                                <span class="bi bi-building me-2" aria-hidden="true"></span> Browse Facilities
+                            </NavLink>
+                        </div>
+                        
+                        <div class="nav-item px-3 ps-4 renter-only">
+                            <NavLink class="nav-link" href="bookings/my">
+                                <span class="bi bi-calendar-check me-2" aria-hidden="true"></span> My Bookings
+                            </NavLink>
+                        </div>
+                        
+                        <div class="nav-item px-3 ps-4 renter-only">
+                            <NavLink class="nav-link" href="events/my">
+                                <span class="bi bi-calendar-event me-2" aria-hidden="true"></span> My Events
+                            </NavLink>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+
+                <!-- User Profile and Logout -->
+                <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu me-2" aria-hidden="true"></span> @mainAuth.User.Identity?.Name
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -63,7 +204,7 @@
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
                         <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                            <span class="bi bi-arrow-bar-left-nav-menu me-2" aria-hidden="true"></span> Logout
                         </button>
                     </form>
                 </div>
@@ -71,12 +212,12 @@
             <NotAuthorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                        <span class="bi bi-person-nav-menu me-2" aria-hidden="true"></span> Register
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                        <span class="bi bi-person-badge-nav-menu me-2" aria-hidden="true"></span> Login
                     </NavLink>
                 </div>
             </NotAuthorized>
@@ -86,16 +227,71 @@
 
 @code {
     private string? currentUrl;
+    private bool isAdministrationExpanded = false;
+    private bool isFacilityManagementExpanded = false;
 
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+        
+        // Auto-expand administration if we're on an admin page
+        if (currentUrl != null && currentUrl.StartsWith("admin/"))
+        {
+            if (currentUrl.StartsWith("admin/users") || currentUrl.StartsWith("admin/roles"))
+            {
+                isAdministrationExpanded = true;
+            }
+            else if (currentUrl.StartsWith("admin/facilities") || currentUrl.StartsWith("admin/rooms") || 
+                     currentUrl.StartsWith("admin/bookings") || currentUrl.StartsWith("admin/events") || 
+                     currentUrl.StartsWith("admin/reports"))
+            {
+                isFacilityManagementExpanded = true;
+            }
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        
+        // Auto-expand administration if navigating to an admin page
+        if (currentUrl != null && currentUrl.StartsWith("admin/"))
+        {
+            if (currentUrl.StartsWith("admin/users") || currentUrl.StartsWith("admin/roles"))
+            {
+                isAdministrationExpanded = true;
+                isFacilityManagementExpanded = false;
+            }
+            else if (currentUrl.StartsWith("admin/facilities") || currentUrl.StartsWith("admin/rooms") || 
+                     currentUrl.StartsWith("admin/bookings") || currentUrl.StartsWith("admin/events") || 
+                     currentUrl.StartsWith("admin/reports"))
+            {
+                isFacilityManagementExpanded = true;
+                isAdministrationExpanded = false;
+            }
+        }
+        
+        StateHasChanged();
+    }
+
+    private void ToggleAdministration()
+    {
+        isAdministrationExpanded = !isAdministrationExpanded;
+        if (isAdministrationExpanded)
+        {
+            isFacilityManagementExpanded = false; // Close other menu when opening this one
+        }
+        StateHasChanged();
+    }
+
+    private void ToggleFacilityManagement()
+    {
+        isFacilityManagementExpanded = !isFacilityManagementExpanded;
+        if (isFacilityManagementExpanded)
+        {
+            isAdministrationExpanded = false; // Close other menu when opening this one
+        }
         StateHasChanged();
     }
 

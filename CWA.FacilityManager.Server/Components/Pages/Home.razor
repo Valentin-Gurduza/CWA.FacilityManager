@@ -2,6 +2,39 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Welcome to CWA Facility Manager!</h1>
 
-Welcome to your new app.
+<div class="row">
+    <div class="col-md-12">
+        <p>Welcome to your facility management application. This platform helps you manage facilities, users, and administrative tasks efficiently.</p>
+        
+        <AuthorizeView>
+            <Authorized>
+                <div class="alert alert-success">
+                    <h5><i class="fas fa-user-check"></i> You are logged in</h5>
+                    <p>Welcome back, <strong>@context.User.Identity?.Name</strong>!</p>
+                </div>
+                
+                <!-- Content that requires email confirmation -->
+                <AuthorizeView Policy="EmailConfirmed" Context="emailContext">
+                    <Authorized>
+                        <EmailConfirmedContent />
+                    </Authorized>
+                    <NotAuthorized>
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-lock"></i> Limited Access</h5>
+                            <p>Some features are restricted until you <a href="Account/Manage/Email">confirm your email address</a>.</p>
+                            <p>Check your email for a confirmation link, or <a href="Account/ResendEmailConfirmation">request a new one</a>.</p>
+                        </div>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </Authorized>
+            <NotAuthorized>
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-sign-in-alt"></i> Get Started</h5>
+                    <p>Please <a href="Account/Login">sign in</a> or <a href="Account/Register">create an account</a> to access the facility management features.</p>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>

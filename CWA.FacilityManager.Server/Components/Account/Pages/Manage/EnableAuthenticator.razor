@@ -5,12 +5,14 @@
 @using System.Text
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
+@using CWA.FacilityManager.Server.Services
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityUserAccessor UserAccessor
 @inject UrlEncoder UrlEncoder
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<EnableAuthenticator> Logger
+@inject IQrCodeService QrCodeService
 
 <PageTitle>Configure authenticator app</PageTitle>
 
@@ -37,9 +39,21 @@ else
             </li>
             <li>
                 <p>Scan the QR Code or enter this key <kbd>@sharedKey</kbd> into your two factor authenticator app. Spaces and casing do not matter.</p>
-                <div class="alert alert-info">Learn how to <a href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</a>.</div>
-                <div></div>
-                <div data-url="@authenticatorUri"></div>
+                @if (!string.IsNullOrEmpty(qrCodeDataUri))
+                {
+                    <div class="text-center mb-3">
+                        <div class="alert alert-info">
+                            <strong>Scan this QR code with your authenticator app:</strong>
+                        </div>
+                        <img src="@qrCodeDataUri" alt="QR Code for 2FA Setup" style="max-width: 200px; max-height: 200px;" />
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        QR code could not be generated. Please use the manual key: <kbd>@sharedKey</kbd>
+                    </div>
+                }
             </li>
             <li>
                 <p>
@@ -72,6 +86,7 @@ else
     private ApplicationUser user = default!;
     private string? sharedKey;
     private string? authenticatorUri;
+    private string? qrCodeDataUri;
     private IEnumerable<string>? recoveryCodes;
 
     [CascadingParameter]
@@ -131,6 +146,17 @@ else
 
         var email = await UserManager.GetEmailAsync(user);
         authenticatorUri = GenerateQrCodeUri(email!, unformattedKey!);
+        
+        // Generate QR code
+        try
+        {
+            qrCodeDataUri = QrCodeService.GenerateQrCodeDataUri(authenticatorUri);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to generate QR code for user {UserId}", await UserManager.GetUserIdAsync(user));
+            qrCodeDataUri = null;
+        }
     }
 
     private string FormatKey(string unformattedKey)
@@ -155,7 +181,7 @@ else
         return string.Format(
             CultureInfo.InvariantCulture,
             AuthenticatorUriFormat,
-            UrlEncoder.Encode("Microsoft.AspNetCore.Identity.UI"),
+            UrlEncoder.Encode("CWA Facility Manager"),
             UrlEncoder.Encode(email),
             unformattedKey);
     }
