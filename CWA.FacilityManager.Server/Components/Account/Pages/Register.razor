@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 
 @inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<ApplicationRole> RoleManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IEmailSender<ApplicationUser> EmailSender
@@ -81,6 +82,34 @@
 
         Logger.LogInformation("User created a new account with password.");
 
+        // Automatically assign Renter role to new users
+        try
+        {
+            var renterRole = await RoleManager.FindByNameAsync("Renter");
+            if (renterRole != null && renterRole.IsActive)
+            {
+                var roleResult = await UserManager.AddToRoleAsync(user, "Renter");
+                if (roleResult.Succeeded)
+                {
+                    Logger.LogInformation("User {Email} automatically assigned Renter role", user.Email);
+                }
+                else
+                {
+                    Logger.LogWarning("Failed to assign Renter role to user {Email}: {Errors}", 
+                        user.Email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                }
+            }
+            else
+            {
+                Logger.LogWarning("Renter role not found or inactive. Cannot assign to user {Email}", user.Email);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error assigning Renter role to user {Email}", user.Email);
+            // Don't fail registration if role assignment fails
+        }
+
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -90,14 +119,19 @@
 
         await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
 
+        // Always sign in the user after registration
+        await SignInManager.SignInAsync(user, isPersistent: false);
+
         if (UserManager.Options.SignIn.RequireConfirmedAccount)
         {
+            // Redirect to confirmation page while logged in
             RedirectManager.RedirectTo(
                 "Account/RegisterConfirmation",
                 new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+            return;
         }
 
-        await SignInManager.SignInAsync(user, isPersistent: false);
+        // If email confirmation is not required, go to the return URL or home
         RedirectManager.RedirectTo(ReturnUrl);
     }
 

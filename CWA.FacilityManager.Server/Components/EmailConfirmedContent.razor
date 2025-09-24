@@ -1,0 +1,4 @@
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Policy = "EmailConfirmed")]
+
+@* Content available to users with confirmed email addresses *@

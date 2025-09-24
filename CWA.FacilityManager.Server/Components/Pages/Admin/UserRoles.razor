@@ -1,0 +1,352 @@
+@page "/admin/users/{userId}/roles"
+@using CWA.FacilityManager.Application.DTOs.UserManagement
+@using CWA.FacilityManager.Application.Interfaces.UserManagement
+@using Microsoft.AspNetCore.Authorization
+@inject IUserManagementService UserManagementService
+@inject IRoleManagementService RoleManagementService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Manage User Roles</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            @if (isLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (user == null)
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    User not found.
+                </div>
+            }
+            else
+            {
+                <!-- Header -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                {
+                                    <img src="@user.ProfilePictureUrl" alt="Profile" class="rounded-circle me-3" width="50" height="50" />
+                                }
+                                else
+                                {
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <span class="text-white fw-bold">@GetInitials(user.DisplayName)</span>
+                                    </div>
+                                }
+                                <div>
+                                    <h4 class="card-title mb-0">Manage Roles: @user.DisplayName</h4>
+                                    <p class="text-muted mb-0">@user.Email</p>
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-secondary" @onclick="GoBack">
+                                    <i class="bi bi-arrow-left me-1"></i>Back to User
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Available Roles -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-list-check me-2"></i>Available Roles
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (availableRoles.Any())
+                                {
+                                    <div class="list-group">
+                                        @foreach (var role in availableRoles.Where(r => !userRoleIds.Contains(r.Id)))
+                                        {
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="fw-medium">@role.Name</div>
+                                                    @if (!string.IsNullOrEmpty(role.Description))
+                                                    {
+                                                        <div class="small text-muted">@role.Description</div>
+                                                    }
+                                                    <div class="small text-muted">Priority: @role.Priority</div>
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-success" 
+                                                        @onclick="() => AssignRole(role)" 
+                                                        disabled="@isUpdating">
+                                                    <i class="bi bi-plus-circle"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted text-center py-4">
+                                        <i class="bi bi-shield-check display-4"></i>
+                                        <p class="mt-2">No available roles</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assigned Roles -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-shield-fill me-2"></i>Assigned Roles (@user.Roles.Count)
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (user.Roles.Any())
+                                {
+                                    <div class="list-group">
+                                        @foreach (var roleName in user.Roles)
+                                        {
+                                            var role = availableRoles.FirstOrDefault(r => r.Name == roleName);
+                                            if (role != null)
+                                            {
+                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <div class="fw-medium">@role.Name</div>
+                                                        @if (!string.IsNullOrEmpty(role.Description))
+                                                        {
+                                                            <div class="small text-muted">@role.Description</div>
+                                                        }
+                                                        <div class="small text-muted">Priority: @role.Priority</div>
+                                                    </div>
+                                                    <button class="btn btn-sm btn-outline-danger" 
+                                                            @onclick="() => RemoveRole(role)" 
+                                                            disabled="@isUpdating">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted text-center py-4">
+                                        <i class="bi bi-shield-x display-4"></i>
+                                        <p class="mt-2">No roles assigned</p>
+                                        <p class="small">Assign roles from the available roles list</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Effective Permissions -->
+                @if (user.Permissions.Any())
+                {
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="bi bi-key me-2"></i>Effective Permissions (@user.Permissions.Count)
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        @foreach (var permission in user.Permissions.OrderBy(p => p))
+                                        {
+                                            <div class="col-md-4 col-sm-6 mb-2">
+                                                <span class="badge bg-light text-dark border">@permission</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => successMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @successMessage
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @errorMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string UserId { get; set; } = string.Empty;
+
+    private UserDto? user;
+    private List<RoleDto> availableRoles = new();
+    private List<string> userRoleIds = new();
+    private bool isLoading = true;
+    private bool isUpdating = false;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Load user first, then roles sequentially to avoid DbContext concurrency issues
+            user = await UserManagementService.GetUserByIdAsync(UserId);
+            
+            if (user != null)
+            {
+                // Load roles after user is loaded
+                availableRoles = (await RoleManagementService.GetActiveRolesAsync()).ToList();
+                
+                // Get role IDs for the user
+                userRoleIds = availableRoles.Where(r => user.Roles.Contains(r.Name)).Select(r => r.Id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AssignRole(RoleDto role)
+    {
+        try
+        {
+            isUpdating = true;
+            errorMessage = string.Empty;
+
+            var result = await UserManagementService.AssignRoleToUserAsync(UserId, role.Id, "System");
+            
+            if (result)
+            {
+                successMessage = $"Role '{role.Name}' assigned successfully!";
+                await RefreshUserData();
+            }
+            else
+            {
+                errorMessage = "Failed to assign role.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error assigning role: {ex.Message}";
+        }
+        finally
+        {
+            isUpdating = false;
+        }
+    }
+
+    private async Task RemoveRole(RoleDto role)
+    {
+        try
+        {
+            isUpdating = true;
+            errorMessage = string.Empty;
+
+            var result = await UserManagementService.RemoveRoleFromUserAsync(UserId, role.Id, "System");
+            
+            if (result)
+            {
+                successMessage = $"Role '{role.Name}' removed successfully!";
+                await RefreshUserData();
+            }
+            else
+            {
+                errorMessage = "Failed to remove role.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error removing role: {ex.Message}";
+        }
+        finally
+        {
+            isUpdating = false;
+        }
+    }
+
+    private async Task RefreshUserData()
+    {
+        try
+        {
+            user = await UserManagementService.GetUserByIdAsync(UserId);
+            if (user != null)
+            {
+                userRoleIds = availableRoles.Where(r => user.Roles.Contains(r.Name)).Select(r => r.Id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error refreshing user data: {ex.Message}";
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/admin/users/{UserId}");
+    }
+
+    private string GetInitials(string displayName)
+    {
+        if (string.IsNullOrEmpty(displayName)) return "??";
+        
+        var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return parts[0][0].ToString().ToUpper();
+    }
+}

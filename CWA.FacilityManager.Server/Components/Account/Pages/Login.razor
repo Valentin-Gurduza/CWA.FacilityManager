@@ -3,11 +3,15 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using CWA.FacilityManager.Domain.Models
+@using CWA.FacilityManager.Server.Services
 
 @inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IRoleBasedRedirectService RoleBasedRedirectService
 
 <PageTitle>Log in</PageTitle>
 
@@ -16,29 +20,59 @@
     <div class="col-lg-6">
         <section>
             <StatusMessage Message="@errorMessage" />
-            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <!-- Account Deactivated Warning -->
+            @if (!string.IsNullOrEmpty(deactivatedMessage))
+            {
+                <div class="alert alert-warning deactivation-notice security-notice" role="alert">
+                    <h4 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Account Deactivated
+                    </h4>
+                    <p class="mb-0">@deactivatedMessage</p>
+                    <hr>
+                    <div class="contact-info">
+                        <p class="mb-0">
+                            <strong>Next Steps:</strong>
+                        </p>
+                        <ul class="next-steps mt-2 mb-0">
+                            <li>Contact your system administrator or staff member</li>
+                            <li>Provide your email address: <strong>@deactivatedUserEmail</strong></li>
+                            <li>Ask for account reactivation if this was done in error</li>
+                        </ul>
+                    </div>
+                </div>
+            }
+            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login" class="@(string.IsNullOrEmpty(deactivatedMessage) ? "" : "login-form-disabled")">
                 <DataAnnotationsValidator />
                 <h2>Use a local account to log in.</h2>
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" disabled="@(!string.IsNullOrEmpty(deactivatedMessage))" />
                     <label for="Input.Email" class="form-label">Email</label>
                     <ValidationMessage For="() => Input.Email" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
+                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" disabled="@(!string.IsNullOrEmpty(deactivatedMessage))" />
                     <label for="Input.Password" class="form-label">Password</label>
                     <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
                 <div class="checkbox mb-3">
                     <label class="form-label">
-                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
+                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" disabled="@(!string.IsNullOrEmpty(deactivatedMessage))" />
                         Remember me
                     </label>
                 </div>
                 <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary" disabled="@(!string.IsNullOrEmpty(deactivatedMessage))">
+                        @if (!string.IsNullOrEmpty(deactivatedMessage))
+                        {
+                            <i class="bi bi-lock-fill me-2"></i><span>Account Deactivated - Login Disabled</span>
+                        }
+                        else
+                        {
+                            <span>Log in</span>
+                        }
+                    </button>
                 </div>
                 <div>
                     <p>
@@ -65,6 +99,8 @@
 
 @code {
     private string? errorMessage;
+    private string? deactivatedMessage;
+    private string? deactivatedUserEmail;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -86,13 +122,59 @@
 
     public async Task LoginUser()
     {
+        // Clear previous messages
+        errorMessage = null;
+        deactivatedMessage = null;
+        deactivatedUserEmail = null;
+
+        // First, check if the user exists and verify their credentials
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+        if (user != null)
+        {
+            // Check if the user is deactivated BEFORE attempting sign-in
+            if (!user.IsActive)
+            {
+                deactivatedMessage = "Your account has been deactivated by a staff member. This means you cannot log in until your account is reactivated.";
+                deactivatedUserEmail = Input.Email;
+                Logger.LogWarning("Deactivated user attempted to login: {Email}", Input.Email);
+                return;
+            }
+
+            // Check password validity before proceeding
+            var passwordValid = await UserManager.CheckPasswordAsync(user, Input.Password);
+            if (!passwordValid)
+            {
+                errorMessage = "Error: Invalid login attempt.";
+                return;
+            }
+        }
+
         // This doesn't count login failures towards account lockout
         // To enable password failures to trigger account lockout, set lockoutOnFailure: true
         var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
         if (result.Succeeded)
         {
-            Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
+            Logger.LogInformation("User logged in: {Email}", Input.Email);
+            
+            // Update last login time
+            if (user != null)
+            {
+                user.LastLoginAt = DateTime.UtcNow;
+                await UserManager.UpdateAsync(user);
+
+                // Create claims principal to check user permissions for redirect
+                var claimsPrincipal = await SignInManager.CreateUserPrincipalAsync(user);
+                
+                // Validate return URL based on user's roles
+                var validReturnUrl = await RoleBasedRedirectService.GetValidReturnUrlAsync(ReturnUrl, claimsPrincipal);
+                
+                Logger.LogInformation("User {Email} redirected to: {ReturnUrl}", Input.Email, validReturnUrl);
+                RedirectManager.RedirectTo(validReturnUrl);
+            }
+            else
+            {
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
         }
         else if (result.RequiresTwoFactor)
         {
@@ -102,8 +184,13 @@
         }
         else if (result.IsLockedOut)
         {
-            Logger.LogWarning("User account locked out.");
+            Logger.LogWarning("User account locked out: {Email}", Input.Email);
             RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else if (result.IsNotAllowed)
+        {
+            Logger.LogWarning("User account not allowed to login - email not confirmed: {Email}", Input.Email);
+            errorMessage = "Error: Email not confirmed. Please check your email and confirm your account before logging in.";
         }
         else
         {
