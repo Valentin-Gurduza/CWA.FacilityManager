@@ -1,0 +1,532 @@
+@page "/rooms/{RoomId:int}"
+@using CWA.FacilityManager.Domain.Models
+@using CWA.FacilityManager.Application.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IRoomService RoomService
+@inject IEventService EventService
+@inject NavigationManager Navigation
+
+<PageTitle>Room Details - @(room?.Name ?? "Loading...")</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        @if (room == null)
+        {
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/rooms">Rooms</a></li>
+                                <li class="breadcrumb-item active">@room.Name</li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                @if (!string.IsNullOrEmpty(statusMessage))
+                {
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert @(statusMessageType == "success" ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                                <i class="fas @(statusMessageType == "success" ? "fa-check-circle" : "fa-exclamation-triangle")"></i>
+                                @statusMessage
+                                <button type="button" class="btn-close" @onclick="ClearStatusMessage"></button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Room Header -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <h1 class="h2">@room.Name</h1>
+                        <div class="room-meta">
+                            <span class="badge bg-primary me-2">
+                                <i class="fas fa-building"></i> @room.Building.Name
+                            </span>
+                            @if (!string.IsNullOrEmpty(room.RoomNumber))
+                            {
+                                <span class="badge bg-secondary me-2">
+                                    <i class="fas fa-door-open"></i> Room #@room.RoomNumber
+                                </span>
+                            }
+                            <span class="badge bg-info">
+                                <i class="fas fa-users"></i> Capacity: @room.Capacity
+                            </span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(room.Description))
+                        {
+                            <p class="text-muted mt-3">@room.Description</p>
+                        }
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-outline-primary me-2" @onclick="@(() => Navigation.NavigateTo($"/rooms/{RoomId}/schedule"))">
+                            <i class="fas fa-calendar-alt"></i> View Full Schedule
+                        </button>
+                        <button class="btn btn-primary" @onclick="ShowCreateEventModal">
+                            <i class="fas fa-plus"></i> Schedule Event
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center border-primary">
+                            <div class="card-body">
+                                <h3 class="text-primary">@upcomingEventsCount</h3>
+                                <p class="text-muted mb-0">Upcoming Events</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center border-success">
+                            <div class="card-body">
+                                <h3 class="text-success">@todayEventsCount</h3>
+                                <p class="text-muted mb-0">Events Today</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center border-info">
+                            <div class="card-body">
+                                <h3 class="text-info">@thisWeekEventsCount</h3>
+                                <p class="text-muted mb-0">Events This Week</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center border-warning">
+                            <div class="card-body">
+                                <h3 class="text-warning">@room.Capacity</h3>
+                                <p class="text-muted mb-0">Max Capacity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent and Upcoming Events -->
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Upcoming Events</h5>
+                            </div>
+                            <div class="card-body">
+                                @if (upcomingEvents.Any())
+                                {
+                                    @foreach (var eventItem in upcomingEvents.Take(5))
+                                    {
+                                        <div class="event-card mb-3 p-3 border-start border-3 @GetEventTypeClass(eventItem.Type)">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="fw-bold mb-1">@eventItem.Title</h6>
+                                                    <div class="text-muted small mb-1">
+                                                        <i class="fas fa-calendar"></i> @eventItem.StartDateTime.ToString("MMM dd, yyyy")
+                                                    </div>
+                                                    <div class="text-muted small mb-1">
+                                                        <i class="fas fa-clock"></i> @eventItem.StartDateTime.ToString("HH:mm") - @eventItem.EndDateTime.ToString("HH:mm")
+                                                    </div>
+                                                    @if (!string.IsNullOrEmpty(eventItem.Organizer))
+                                                    {
+                                                        <div class="text-muted small">
+                                                            <i class="fas fa-user"></i> @eventItem.Organizer
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge @GetEventTypeBadge(eventItem.Type) mb-2">@eventItem.Type</span>
+                                                    @if (eventItem.IsConfirmed)
+                                                    {
+                                                        <div><span class="badge bg-success">Confirmed</span></div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div><span class="badge bg-warning text-dark">Pending</span></div>
+                                                    }
+                                                </div>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(eventItem.Description))
+                                            {
+                                                <p class="text-muted small mt-2 mb-0">@eventItem.Description</p>
+                                            }
+                                        </div>
+                                    }
+                                    @if (upcomingEvents.Count() > 5)
+                                    {
+                                        <div class="text-center">
+                                            <button class="btn btn-outline-primary btn-sm" @onclick="@(() => Navigation.NavigateTo($"/rooms/{RoomId}/schedule"))">
+                                                View All @upcomingEvents.Count() Events
+                                            </button>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                        <p>No upcoming events scheduled for this room.</p>
+                                        <button class="btn btn-primary" @onclick="ShowCreateEventModal">
+                                            <i class="fas fa-plus"></i> Schedule First Event
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Room Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <strong>Building:</strong><br>
+                                        <span class="text-muted">@room.Building.Name</span>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <strong>Room Number:</strong><br>
+                                        <span class="text-muted">@(room.RoomNumber ?? "Not specified")</span>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <strong>Capacity:</strong><br>
+                                        <span class="text-muted">@room.Capacity people</span>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <strong>Status:</strong><br>
+                                        <span class="badge @(room.IsActive ? "bg-success" : "bg-danger")">
+                                            @(room.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <strong>Building Address:</strong><br>
+                                        <span class="text-muted">@(room.Building.Address ?? "Not specified")</span>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(room.Building.Description))
+                                    {
+                                        <div class="col-12">
+                                            <strong>Building Description:</strong><br>
+                                            <span class="text-muted">@room.Building.Description</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Quick Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" @onclick="ShowCreateEventModal">
+                                        <i class="fas fa-plus"></i> Schedule New Event
+                                    </button>
+                                    <button class="btn btn-outline-info" @onclick="@(() => Navigation.NavigateTo($"/rooms/{RoomId}/schedule"))">
+                                        <i class="fas fa-calendar-alt"></i> View Full Schedule
+                                    </button>
+                                    <button class="btn btn-outline-secondary" @onclick="@(() => Navigation.NavigateTo("/rooms"))">
+                                        <i class="fas fa-arrow-left"></i> Back to All Rooms
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Create Event Modal -->
+        @if (showEventModal)
+        {
+            <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Schedule New Event</h5>
+                            <button type="button" class="btn-close" @onclick="CloseEventModal"></button>
+                        </div>
+                        <EditForm Model="eventModel" OnValidSubmit="SaveEvent" Context="editFormContext">
+                            <DataAnnotationsValidator />
+                            <div class="modal-body">
+                                <ValidationSummary class="text-danger" />
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Event Title *</label>
+                                    <InputText class="form-control" @bind-Value="eventModel.Title" placeholder="Enter event title" />
+                                    <ValidationMessage For="() => eventModel.Title" class="text-danger" />
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Event Type</label>
+                                            <InputSelect class="form-select" @bind-Value="eventModel.Type">
+                                                @foreach (EventType type in Enum.GetValues<EventType>())
+                                                {
+                                                    <option value="@type">@type</option>
+                                                }
+                                            </InputSelect>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Expected Attendees</label>
+                                            <InputNumber class="form-control" @bind-Value="eventModel.ExpectedAttendees" min="1" max="@(room?.Capacity ?? 1)" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Start Date & Time *</label>
+                                            <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="eventModel.StartDateTime" />
+                                            <ValidationMessage For="() => eventModel.StartDateTime" class="text-danger" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">End Date & Time *</label>
+                                            <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="eventModel.EndDateTime" />
+                                            <ValidationMessage For="() => eventModel.EndDateTime" class="text-danger" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Organizer</label>
+                                            <InputText class="form-control" @bind-Value="eventModel.Organizer" placeholder="Event organizer name" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Contact Email</label>
+                                            <InputText class="form-control" @bind-Value="eventModel.ContactEmail" placeholder="contact@example.com" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Description</label>
+                                    <InputTextArea class="form-control" rows="3" @bind-Value="eventModel.Description" placeholder="Event description..." />
+                                </div>
+
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="eventModel.IsConfirmed" />
+                                    <label class="form-check-label">
+                                        Mark as confirmed
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" @onclick="CloseEventModal">Cancel</button>
+                                <button type="submit" class="btn btn-primary" disabled="@isProcessing">
+                                    @if (isProcessing)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    }
+                                    Schedule Event
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="text-center mt-5">
+                        <i class="fas fa-lock fa-4x text-muted mb-4"></i>
+                        <h2>Access Restricted</h2>
+                        <p class="text-muted">You need to be logged in to view room details.</p>
+                        <a href="/Account/Login" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter] public int RoomId { get; set; }
+
+    private Room? room;
+    private IEnumerable<Event> upcomingEvents = new List<Event>();
+    private int upcomingEventsCount;
+    private int todayEventsCount;
+    private int thisWeekEventsCount;
+    private bool showEventModal = false;
+    private bool isProcessing = false;
+    private Event eventModel = new Event();
+    private string statusMessage = string.Empty;
+    private string statusMessageType = "success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRoomData();
+    }
+
+    private async Task LoadRoomData()
+    {
+        try
+        {
+            room = await RoomService.GetRoomByIdAsync(RoomId);
+            if (room != null)
+            {
+                var allEvents = await EventService.GetEventsByRoomAsync(RoomId);
+                var now = DateTime.UtcNow;
+                
+                upcomingEvents = allEvents.Where(e => e.StartDateTime >= now).OrderBy(e => e.StartDateTime);
+                upcomingEventsCount = upcomingEvents.Count();
+                
+                todayEventsCount = allEvents.Count(e => e.StartDateTime.Date == now.Date);
+                
+                var weekStart = now.Date.AddDays(-(int)now.DayOfWeek);
+                var weekEnd = weekStart.AddDays(7);
+                thisWeekEventsCount = allEvents.Count(e => e.StartDateTime >= weekStart && e.StartDateTime < weekEnd);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error loading room data: {ex.Message}", "error");
+        }
+    }
+
+    private void ShowCreateEventModal()
+    {
+        eventModel = new Event
+        {
+            RoomId = RoomId,
+            StartDateTime = DateTime.Now.AddHours(1),
+            EndDateTime = DateTime.Now.AddHours(2),
+            ExpectedAttendees = 1
+        };
+        showEventModal = true;
+        ClearStatusMessage();
+    }
+
+    private void CloseEventModal()
+    {
+        showEventModal = false;
+        eventModel = new Event();
+        isProcessing = false;
+    }
+
+    private async Task SaveEvent()
+    {
+        isProcessing = true;
+
+        try
+        {
+            // Check room availability
+            var isAvailable = await EventService.IsRoomAvailableAsync(
+                eventModel.RoomId, 
+                eventModel.StartDateTime, 
+                eventModel.EndDateTime);
+
+            if (!isAvailable)
+            {
+                ShowStatusMessage("The room is not available for the selected time slot. Please choose a different time.", "error");
+                return;
+            }
+
+            await EventService.CreateEventAsync(eventModel);
+            ShowStatusMessage($"Event '{eventModel.Title}' scheduled successfully!", "success");
+            CloseEventModal();
+            await LoadRoomData();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error scheduling event: {ex.Message}", "error");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void ShowStatusMessage(string message, string type)
+    {
+        statusMessage = message;
+        statusMessageType = type;
+
+        // Auto-hide success messages after 5 seconds
+        if (type == "success")
+        {
+            _ = Task.Delay(5000).ContinueWith(_ => ClearStatusMessage());
+        }
+    }
+
+    private void ClearStatusMessage()
+    {
+        statusMessage = string.Empty;
+    }
+
+    private string GetEventTypeClass(EventType type)
+    {
+        return type switch
+        {
+            EventType.Meeting => "border-primary",
+            EventType.Course => "border-success",
+            EventType.Conference => "border-info",
+            EventType.Training => "border-warning",
+            EventType.Workshop => "border-danger",
+            _ => "border-secondary"
+        };
+    }
+
+    private string GetEventTypeBadge(EventType type)
+    {
+        return type switch
+        {
+            EventType.Meeting => "bg-primary",
+            EventType.Course => "bg-success",
+            EventType.Conference => "bg-info",
+            EventType.Training => "bg-warning text-dark",
+            EventType.Workshop => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}
+
+<style>
+    .event-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .event-card:hover {
+        background-color: #e9ecef;
+    }
+
+    .room-meta .badge {
+        font-size: 0.85em;
+    }
+
+    .alert-dismissible {
+        position: relative;
+    }
+</style>

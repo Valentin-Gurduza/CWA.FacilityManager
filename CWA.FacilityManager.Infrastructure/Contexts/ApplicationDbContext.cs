@@ -1,4 +1,6 @@
-﻿using CWA.FacilityManager.Domain.Models;
+using System;
+using System.Collections.Generic;
+using CWA.FacilityManager.Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +13,12 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
         {
         }
 
-        // DbSets for custom entities
+        // Rooms-task-cwa DbSets
+        public DbSet<Building> Buildings { get; set; }
+        public DbSet<Room> Rooms { get; set; }
+        public DbSet<Event> Events { get; set; }
+
+        // Merge-Test DbSets
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
 
@@ -19,7 +26,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
         {
             base.OnModelCreating(builder);
 
-            // Configure ApplicationUser
+            // Merge-Test: Configure ApplicationUser
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.Property(e => e.FirstName).HasMaxLength(100);
@@ -34,7 +41,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasIndex(e => e.Department);
             });
 
-            // Configure ApplicationRole
+            // Merge-Test: Configure ApplicationRole
             builder.Entity<ApplicationRole>(entity =>
             {
                 entity.Property(e => e.Description).HasMaxLength(500);
@@ -47,14 +54,14 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasIndex(e => e.RoleType);
             });
 
-            // Configure UserRole (junction table)
+            // Merge-Test: Configure UserRole (junction table)
             builder.Entity<UserRole>(entity =>
             {
                 entity.HasKey(ur => new { ur.UserId, ur.RoleId });
-                
+
                 entity.Property(e => e.AssignedBy).HasMaxLength(450);
                 entity.Property(e => e.Notes).HasMaxLength(1000);
-                
+
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.AssignedAt);
                 entity.HasIndex(e => e.ExpiresAt);
@@ -70,7 +77,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Configure Permission
+            // Merge-Test: Configure Permission
             builder.Entity<Permission>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -80,7 +87,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.Module).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Resource).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Action).IsRequired().HasMaxLength(50);
-                
+
                 entity.HasIndex(e => e.Name).IsUnique();
                 entity.HasIndex(e => new { e.Module, e.Resource, e.Action }).IsUnique();
                 entity.HasIndex(e => e.Module);
@@ -88,12 +95,12 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasIndex(e => e.IsSystemPermission);
             });
 
-            // Configure RolePermission (junction table)
+            // Merge-Test: Configure RolePermission (junction table)
             builder.Entity<RolePermission>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.GrantedBy).HasMaxLength(450);
-                
+
                 entity.HasIndex(e => new { e.RoleId, e.PermissionId }).IsUnique();
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.GrantedAt);
@@ -109,9 +116,71 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Seed default permissions and roles
+            // Rooms-task-cwa: Configure Building entity
+            builder.Entity<Building>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Address).HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(500);
+            });
+
+            // Rooms-task-cwa: Configure Room entity
+            builder.Entity<Room>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.RoomNumber).HasMaxLength(20);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                // Store Activity as integer (enum underlying value)
+                entity.Property(e => e.Activity).HasConversion<int>();
+                entity.Property(e => e.Date).IsRequired();
+                entity.Property(e => e.Time).IsRequired();
+
+                entity.HasOne(r => r.Building)
+                    .WithMany(b => b.Rooms)
+                    .HasForeignKey(r => r.BuildingId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Rooms-task-cwa: Configure Event entity
+            builder.Entity<Event>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.Organizer).HasMaxLength(100);
+                entity.Property(e => e.ContactEmail).HasMaxLength(200);
+                entity.Property(e => e.Type).HasConversion<string>();
+
+                entity.HasOne(e => e.Room)
+                    .WithMany(r => r.Events)
+                    .HasForeignKey(e => e.RoomId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.CreatedBy)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedById)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Merge-Test: Seed default permissions and roles
             SeedDefaultPermissions(builder);
             SeedDefaultRoles(builder);
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+
+            // Enable sensitive data logging in development to help with debugging
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            {
+                optionsBuilder.EnableSensitiveDataLogging();
+            }
+
+            // Configure query tracking behavior
+            optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.TrackAll);
         }
 
         private static void SeedDefaultPermissions(ModelBuilder builder)
@@ -289,7 +358,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
         private static void SeedDefaultRoles(ModelBuilder builder)
         {
             var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            
+
             var roles = new[]
             {
                 new ApplicationRole

@@ -5,6 +5,9 @@ using CWA.FacilityManager.Domain.Models;
 using CWA.FacilityManager.Infrastructure.Contexts;
 using CWA.FacilityManager.Server.Components;
 using CWA.FacilityManager.Server.Components.Account;
+using CWA.FacilityManager.Server.Data;
+using CWA.FacilityManager.Application.Interfaces;
+using CWA.FacilityManager.Application.Services;
 using CWA.FacilityManager.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -14,8 +17,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents()
-    .AddInteractiveServerComponents() // Add this line for interactive server components
     .AddAuthenticationStateSerialization();
 
 builder.Services.AddCascadingAuthenticationState();
@@ -35,18 +38,18 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("EmailConfirmed", policy =>
         policy.RequireAuthenticatedUser()
               .RequireClaim("EmailConfirmed", "True"));
-              
+
     // Add policy to require active users - CRITICAL SECURITY
     options.AddPolicy("ActiveUser", policy =>
         policy.RequireAuthenticatedUser()
               .RequireClaim("IsActive", "True"));
-              
+
     // Combine policies for admin access
     options.AddPolicy("ActiveAdmin", policy =>
         policy.RequireAuthenticatedUser()
               .RequireClaim("IsActive", "True")
               .RequireRole("Administrator"));
-              
+
     options.AddPolicy("ActiveAdminOrSecretary", policy =>
         policy.RequireAuthenticatedUser()
               .RequireClaim("IsActive", "True")
@@ -56,30 +59,31 @@ builder.Services.AddAuthorization(options =>
 // Register the custom authorization handler
 builder.Services.AddScoped<IAuthorizationHandler, ActiveUserRequirementHandler>();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Configure Identity with custom user and role
-builder.Services.AddIdentityCore<ApplicationUser>(options => 
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         // Set email confirmation requirement from configuration
         // Configure in appsettings.json: "Identity": { "RequireConfirmedAccount": true }
         options.SignIn.RequireConfirmedAccount = builder.Configuration.GetValue<bool>("Identity:RequireConfirmedAccount", builder.Environment.IsProduction());
-        
+
         // Configure password requirements
         options.Password.RequiredLength = 8;
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireUppercase = true;
         options.Password.RequireNonAlphanumeric = false;
-        
+
         // Configure lockout
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.AllowedForNewUsers = true;
-        
+
         // Configure email confirmation
         options.User.RequireUniqueEmail = true;
     })
@@ -98,6 +102,11 @@ builder.Services.AddScoped<IRoleManagementService, RoleManagementService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<RoleInitializationService>();
 
+// Register Room Management Services
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IBuildingService, BuildingService>();
+builder.Services.AddScoped<IEventService, EventService>();
+
 // Register email service and QR code service
 builder.Services.AddScoped<IEmailSender<ApplicationUser>, EmailService>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, EmailService>();
@@ -107,6 +116,13 @@ builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IRoleBasedRedirectService, RoleBasedRedirectService>();
 
 var app = builder.Build();
+
+// Seed the database
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await SeedData.Initialize(context);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -127,8 +143,8 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddInteractiveServerRenderMode() // Add this line for interactive server render mode
     .AddAdditionalAssemblies(typeof(CWA.FacilityManager.Client._Imports).Assembly);
 
 // Add additional endpoints required by the Identity /Account Razor components.
@@ -142,11 +158,11 @@ using (var scope = app.Services.CreateScope())
         // Initialize system permissions
         var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
         await permissionService.InitializeSystemPermissionsAsync();
-        
+
         // Initialize role permissions
         var roleInitService = scope.ServiceProvider.GetRequiredService<RoleInitializationService>();
         await roleInitService.InitializeDefaultRolePermissionsAsync();
-        
+
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("User management system initialized successfully");
     }
