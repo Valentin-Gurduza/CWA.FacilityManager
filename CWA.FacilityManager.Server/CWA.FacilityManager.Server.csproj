@@ -13,6 +13,8 @@
     <ProjectReference Include="..\CWA.FacilityManager.Client\CWA.FacilityManager.Client.csproj" />
     <ProjectReference Include="..\CWA.FacilityManager.Domain\CWA.FacilityManager.Domain.csproj" />
     <ProjectReference Include="..\CWA.FacilityManager.Infrastructure\CWA.FacilityManager.Infrastructure.csproj" />
+    <ProjectReference Include="..\CWA.FacilityManager.Application\CWA.FacilityManager.Application.csproj" />
+    <ProjectReference Include="..\CWA.FacilityManager.Shared\CWA.FacilityManager.Shared.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.8" />
