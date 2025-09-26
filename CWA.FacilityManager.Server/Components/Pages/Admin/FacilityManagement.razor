@@ -1,0 +1,209 @@
+@page "/admin/facilities"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Policy = "ActiveAdminOrSecretary")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Facility Management</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">
+                    <i class="bi bi-building-fill me-2 text-primary"></i>Facility Management
+                </h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark-pdf-fill me-2"></i>Export PDF
+                    </button>
+                    <button class="btn btn-primary">
+                        <i class="bi bi-building-add me-2"></i>Add New Facility
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Total Facilities</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">12</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-building text-primary" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Active Facilities</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">10</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Total Rooms</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">48</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-door-open text-info" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Maintenance Required</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">3</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" placeholder="Search facilities..." />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select">
+                                <option value="">All Types</option>
+                                <option value="conference">Conference Centers</option>
+                                <option value="meeting">Meeting Rooms</option>
+                                <option value="event">Event Halls</option>
+                                <option value="training">Training Facilities</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="maintenance">Under Maintenance</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-primary w-100">
+                                <i class="bi bi-funnel-fill me-2"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Facilities Grid -->
+            <div class="row">
+                @for (int i = 1; i <= 8; i++)
+                {
+                    <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="bi bi-building text-muted" style="font-size: 4rem;"></i>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">Facility @i</h5>
+                                    <span class="badge bg-success">Active</span>
+                                </div>
+                                <p class="card-text text-muted">
+                                    <small><i class="bi bi-geo-alt-fill me-1"></i>Downtown Location @i</small>
+                                </p>
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-door-open me-1"></i>@(i * 2 + 4) Rooms • 
+                                        <i class="bi bi-people-fill ms-2 me-1"></i>@(i * 50 + 100) Capacity
+                                    </small>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-outline-primary btn-sm" title="View Details">
+                                            <i class="bi bi-eye-fill"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" title="Edit">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </button>
+                                        <button class="btn btn-outline-info btn-sm" title="Rooms">
+                                            <i class="bi bi-door-open"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Updated 2 days ago</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Facility pagination">
+                    <ul class="pagination">
+                        <li class="page-item disabled">
+                            <span class="page-link">Previous</span>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">1</span>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">2</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">3</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Placeholder for future implementation
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.CompletedTask;
+    }
+}

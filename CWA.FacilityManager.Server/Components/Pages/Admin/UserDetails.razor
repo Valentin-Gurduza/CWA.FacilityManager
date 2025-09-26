@@ -1,0 +1,275 @@
+@page "/admin/users/{userId}"
+@using CWA.FacilityManager.Application.DTOs.UserManagement
+@using CWA.FacilityManager.Application.Interfaces.UserManagement
+@using Microsoft.AspNetCore.Authorization
+@inject IUserManagementService UserManagementService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>User Details</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            @if (isLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (user == null)
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    User not found.
+                </div>
+            }
+            else
+            {
+                <!-- Header -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                {
+                                    <img src="@user.ProfilePictureUrl" alt="Profile" class="rounded-circle me-3" width="60" height="60" />
+                                }
+                                else
+                                {
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                        <span class="text-white fw-bold fs-4">@GetInitials(user.DisplayName)</span>
+                                    </div>
+                                }
+                                <div>
+                                    <h4 class="card-title mb-1">@user.DisplayName</h4>
+                                    <p class="text-muted mb-0">
+                                        <span class="badge @(user.IsActive ? "bg-success" : "bg-danger")">
+                                            @(user.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                        @if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow)
+                                        {
+                                            <span class="badge bg-warning ms-1">Locked until @user.LockoutEnd.Value.ToString("MMM dd, yyyy HH:mm")</span>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-secondary" @onclick="GoBack">
+                                    <i class="bi bi-arrow-left me-1"></i>Back
+                                </button>
+                                <button type="button" class="btn btn-primary" @onclick="EditUser">
+                                    <i class="bi bi-pencil me-1"></i>Edit User
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-person me-2"></i>Basic Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="user-details-info">
+                                    <div class="info-row">
+                                        <span class="info-label">Username:</span>
+                                        <span class="info-value">@user.UserName</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Email:</span>
+                                        <span class="info-value">
+                                            <span class="text-break">@user.Email</span>
+                                            @if (user.EmailConfirmed)
+                                            {
+                                                <i class="bi bi-check-circle-fill text-success ms-2" title="Email Confirmed"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-exclamation-circle-fill text-warning ms-2" title="Email Not Confirmed"></i>
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Phone:</span>
+                                        <span class="info-value">@(user.PhoneNumber ?? "-")</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Department:</span>
+                                        <span class="info-value">@(user.Department ?? "-")</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Job Title:</span>
+                                        <span class="info-value">@(user.JobTitle ?? "-")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles and Permissions -->
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-shield-check me-2"></i>Roles & Permissions
+                                </h5>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="ManageRoles">
+                                    <i class="bi bi-gear me-1"></i>Manage Roles
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                @if (user.Roles.Any())
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-medium">Assigned Roles:</label>
+                                        <div>
+                                            @foreach (var role in user.Roles)
+                                            {
+                                                <span class="badge bg-secondary me-1 mb-1">@role</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted">No roles assigned</div>
+                                }
+
+                                @if (user.Permissions.Any())
+                                {
+                                    <div class="mt-3">
+                                        <label class="form-label fw-medium">Effective Permissions:</label>
+                                        <div class="small" style="max-height: 200px; overflow-y: auto;">
+                                            @foreach (var permission in user.Permissions.Take(10))
+                                            {
+                                                <div class="text-muted">• @permission</div>
+                                            }
+                                            @if (user.Permissions.Count > 10)
+                                            {
+                                                <div class="text-muted">... and @(user.Permissions.Count - 10) more</div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Information -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-activity me-2"></i>Activity Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-4">
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="activity-info-item">
+                                            <label class="activity-label">Created:</label>
+                                            <div class="activity-value">@user.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+                                            @if (!string.IsNullOrEmpty(user.CreatedBy))
+                                            {
+                                                <div class="activity-meta">by @user.CreatedBy</div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="activity-info-item">
+                                            <label class="activity-label">Last Modified:</label>
+                                            <div class="activity-value">@(user.LastModifiedAt?.ToString("MMM dd, yyyy HH:mm") ?? "-")</div>
+                                            @if (!string.IsNullOrEmpty(user.ModifiedBy))
+                                            {
+                                                <div class="activity-meta">by @user.ModifiedBy</div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="activity-info-item">
+                                            <label class="activity-label">Last Login:</label>
+                                            <div class="activity-value">@(user.LastLoginAt?.ToString("MMM dd, yyyy HH:mm") ?? "Never")</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 col-sm-6">
+                                        <div class="activity-info-item">
+                                            <label class="activity-label">Failed Login Attempts:</label>
+                                            <div class="activity-value">@user.AccessFailedCount</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string UserId { get; set; } = string.Empty;
+
+    private UserDto? user;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUser();
+    }
+
+    private async Task LoadUser()
+    {
+        try
+        {
+            isLoading = true;
+            user = await UserManagementService.GetUserByIdAsync(UserId);
+        }
+        catch (Exception)
+        {
+            // Handle error - could show toast notification
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/admin/users");
+    }
+
+    private void EditUser()
+    {
+        Navigation.NavigateTo($"/admin/users/{UserId}/edit");
+    }
+
+    private void ManageRoles()
+    {
+        Navigation.NavigateTo($"/admin/users/{UserId}/roles");
+    }
+
+    private string GetInitials(string displayName)
+    {
+        if (string.IsNullOrEmpty(displayName)) return "??";
+        
+        var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return parts[0][0].ToString().ToUpper();
+    }
+}

@@ -1,0 +1,256 @@
+@page "/admin/users/{userId}/edit"
+@using CWA.FacilityManager.Application.DTOs.UserManagement
+@using CWA.FacilityManager.Application.Interfaces.UserManagement
+@using Microsoft.AspNetCore.Authorization
+@inject IUserManagementService UserManagementService
+@inject NavigationManager Navigation
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Edit User</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            @if (isLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (user == null)
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    User not found.
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="card-title mb-0">
+                                <i class="bi bi-pencil me-2"></i>Edit User: @user.DisplayName
+                            </h4>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                <i class="bi bi-arrow-left me-1"></i>Back
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="updateUserDto" OnValidSubmit="UpdateUser">
+                            <DataAnnotationsValidator />
+
+                            <!-- Basic Information -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="firstName" class="form-label">First Name</label>
+                                    <InputText id="firstName" class="form-control" @bind-Value="updateUserDto.FirstName" placeholder="Enter first name" />
+                                    <ValidationMessage For="() => updateUserDto.FirstName" class="text-danger" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="lastName" class="form-label">Last Name</label>
+                                    <InputText id="lastName" class="form-control" @bind-Value="updateUserDto.LastName" placeholder="Enter last name" />
+                                    <ValidationMessage For="() => updateUserDto.LastName" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <!-- Account Information -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="userName" class="form-label">Username <span class="text-danger">*</span></label>
+                                    <InputText id="userName" class="form-control" @bind-Value="updateUserDto.UserName" placeholder="Enter username" required />
+                                    <ValidationMessage For="() => updateUserDto.UserName" class="text-danger" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <InputText id="email" type="email" class="form-control" @bind-Value="updateUserDto.Email" placeholder="Enter email address" required />
+                                    <ValidationMessage For="() => updateUserDto.Email" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <!-- Contact Information -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="phoneNumber" class="form-label">Phone Number</label>
+                                    <InputText id="phoneNumber" class="form-control" @bind-Value="updateUserDto.PhoneNumber" placeholder="Enter phone number" />
+                                    <ValidationMessage For="() => updateUserDto.PhoneNumber" class="text-danger" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="department" class="form-label">Department</label>
+                                    <InputText id="department" class="form-control" @bind-Value="updateUserDto.Department" placeholder="Enter department" />
+                                    <ValidationMessage For="() => updateUserDto.Department" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <!-- Organization Information -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="jobTitle" class="form-label">Job Title</label>
+                                    <InputText id="jobTitle" class="form-control" @bind-Value="updateUserDto.JobTitle" placeholder="Enter job title" />
+                                    <ValidationMessage For="() => updateUserDto.JobTitle" class="text-danger" />
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mt-4">
+                                        <InputCheckbox id="isActive" class="form-check-input" @bind-Value="updateUserDto.IsActive" />
+                                        <label class="form-check-label" for="isActive">
+                                            Account Active
+                                        </label>
+                                        <div class="form-text">Inactive users cannot log in to the system.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" disabled="@isUpdating">
+                                    @if (isUpdating)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Updating...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        <span>Update User</span>
+                                    }
+                                </button>
+                                <button type="button" class="btn btn-secondary" @onclick="Cancel" disabled="@isUpdating">
+                                    Cancel
+                                </button>
+                                <button type="button" class="btn btn-outline-info" @onclick="ManageRoles" disabled="@isUpdating">
+                                    <i class="bi bi-shield-check me-1"></i>Manage Roles
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => successMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @successMessage
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @errorMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string UserId { get; set; } = string.Empty;
+
+    private UserDto? user;
+    private UpdateUserDto updateUserDto = new();
+    private bool isLoading = true;
+    private bool isUpdating = false;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUser();
+    }
+
+    private async Task LoadUser()
+    {
+        try
+        {
+            isLoading = true;
+            user = await UserManagementService.GetUserByIdAsync(UserId);
+            
+            if (user != null)
+            {
+                updateUserDto = new UpdateUserDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                    Department = user.Department,
+                    JobTitle = user.JobTitle,
+                    IsActive = user.IsActive
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading user: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task UpdateUser()
+    {
+        try
+        {
+            isUpdating = true;
+            errorMessage = string.Empty;
+            successMessage = string.Empty;
+
+            var result = await UserManagementService.UpdateUserAsync(updateUserDto, "System"); // In real app, use current user
+            
+            successMessage = "User updated successfully!";
+            user = result;
+            
+            // Auto-hide success message after 3 seconds
+            _ = Task.Delay(3000).ContinueWith(t => 
+            {
+                successMessage = string.Empty;
+                InvokeAsync(StateHasChanged);
+            });
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isUpdating = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/admin/users/{UserId}");
+    }
+
+    private void ManageRoles()
+    {
+        Navigation.NavigateTo($"/admin/users/{UserId}/roles");
+    }
+}

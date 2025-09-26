@@ -17,10 +17,113 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.ApplicationRole", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSystemRole")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RoleType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsSystemRole");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex")
+                        .HasFilter("[NormalizedName] IS NOT NULL");
+
+                    b.HasIndex("Priority");
+
+                    b.HasIndex("RoleType");
+
+                    b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "550e8400-e29b-41d4-a716-446655440001",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "System administrator with full access to all features",
+                            IsActive = true,
+                            IsSystemRole = true,
+                            Name = "Administrator",
+                            NormalizedName = "ADMINISTRATOR",
+                            Priority = 100,
+                            RoleType = 2
+                        },
+                        new
+                        {
+                            Id = "550e8400-e29b-41d4-a716-446655440002",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Secretary with access to manage bookings, view reports, and manage facilities",
+                            IsActive = true,
+                            IsSystemRole = true,
+                            Name = "Secretary",
+                            NormalizedName = "SECRETARY",
+                            Priority = 80,
+                            RoleType = 3
+                        },
+                        new
+                        {
+                            Id = "550e8400-e29b-41d4-a716-446655440003",
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Renter with access to view facilities and create booking requests",
+                            IsActive = true,
+                            IsSystemRole = true,
+                            Name = "Renter",
+                            NormalizedName = "RENTER",
+                            Priority = 60,
+                            RoleType = 4
+                        });
+                });
 
             modelBuilder.Entity("CWA.FacilityManager.Domain.Models.ApplicationUser", b =>
                 {
@@ -34,6 +137,17 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -41,11 +155,36 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -64,6 +203,10 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("ProfilePictureUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -75,6 +218,12 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Department");
+
+                    b.HasIndex("IsActive");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -98,9 +247,9 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.Property<string>("AssignedUserId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Category")
+                    b.Property<string>("Category")
                         .HasMaxLength(100)
-                        .HasColumnType("int");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Color")
                         .HasMaxLength(50)
@@ -174,31 +323,329 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.ToTable("CalendarTasks");
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Building", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
 
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("RoleNameIndex")
-                        .HasFilter("[NormalizedName] IS NOT NULL");
+                    b.ToTable("Buildings");
+                });
 
-                    b.ToTable("AspNetRoles", (string)null);
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Event", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("EndDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ExpectedAttendees")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Organizer")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("Events");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Room", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Activity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BuildingId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RoomNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<TimeSpan>("Time")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId");
+
+                    b.ToTable("Rooms");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Permission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<bool>("IsSystemPermission")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsSystemPermission");
+
+                    b.HasIndex("Module");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("Resource");
+
+                    b.HasIndex("Module", "Resource", "Action")
+                        .IsUnique();
+
+                    b.ToTable("Permissions");
+
+                    b.HasData(
+                        new { Id = 1, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view users", DisplayName = "View Users", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Users.View", Resource = "Users" },
+                        new { Id = 2, Action = "Create", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to create users", DisplayName = "Create Users", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Users.Create", Resource = "Users" },
+                        new { Id = 3, Action = "Edit", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to edit users", DisplayName = "Edit Users", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Users.Edit", Resource = "Users" },
+                        new { Id = 4, Action = "Delete", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to delete users", DisplayName = "Delete Users", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Users.Delete", Resource = "Users" },
+                        new { Id = 5, Action = "Assign", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to assign users", DisplayName = "Assign Users", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Users.Assign", Resource = "Users" },
+                        new { Id = 6, Action = "Unassign", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to unassign users", DisplayName = "Unassign Users", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Users.Unassign", Resource = "Users" },
+                        new { Id = 7, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view roles", DisplayName = "View Roles", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Roles.View", Resource = "Roles" },
+                        new { Id = 8, Action = "Create", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to create roles", DisplayName = "Create Roles", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Roles.Create", Resource = "Roles" },
+                        new { Id = 9, Action = "Edit", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to edit roles", DisplayName = "Edit Roles", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Roles.Edit", Resource = "Roles" },
+                        new { Id = 10, Action = "Delete", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to delete roles", DisplayName = "Delete Roles", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Roles.Delete", Resource = "Roles" },
+                        new { Id = 11, Action = "AssignPermissions", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to assignpermissions roles", DisplayName = "AssignPermissions Roles", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Roles.AssignPermissions", Resource = "Roles" },
+                        new { Id = 12, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view permissions", DisplayName = "View Permissions", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Permissions.View", Resource = "Permissions" },
+                        new { Id = 13, Action = "Create", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to create permissions", DisplayName = "Create Permissions", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Permissions.Create", Resource = "Permissions" },
+                        new { Id = 14, Action = "Delete", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to delete permissions", DisplayName = "Delete Permissions", IsSystemPermission = true, Module = "UserManagement", Name = "UserManagement.Permissions.Delete", Resource = "Permissions" },
+                        new { Id = 15, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view facilities", DisplayName = "View Facilities", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Facilities.View", Resource = "Facilities" },
+                        new { Id = 16, Action = "Create", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to create facilities", DisplayName = "Create Facilities", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Facilities.Create", Resource = "Facilities" },
+                        new { Id = 17, Action = "Edit", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to edit facilities", DisplayName = "Edit Facilities", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Facilities.Edit", Resource = "Facilities" },
+                        new { Id = 18, Action = "Delete", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to delete facilities", DisplayName = "Delete Facilities", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Facilities.Delete", Resource = "Facilities" },
+                        new { Id = 19, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view rooms", DisplayName = "View Rooms", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Rooms.View", Resource = "Rooms" },
+                        new { Id = 20, Action = "Create", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to create rooms", DisplayName = "Create Rooms", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Rooms.Create", Resource = "Rooms" },
+                        new { Id = 21, Action = "Edit", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to edit rooms", DisplayName = "Edit Rooms", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Rooms.Edit", Resource = "Rooms" },
+                        new { Id = 22, Action = "Delete", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to delete rooms", DisplayName = "Delete Rooms", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Rooms.Delete", Resource = "Rooms" },
+                        new { Id = 23, Action = "ViewSchedule", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to viewschedule rooms", DisplayName = "ViewSchedule Rooms", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Rooms.ViewSchedule", Resource = "Rooms" },
+                        new { Id = 24, Action = "ManageSchedule", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to manageschedule rooms", DisplayName = "ManageSchedule Rooms", IsSystemPermission = true, Module = "FacilityManagement", Name = "FacilityManagement.Rooms.ManageSchedule", Resource = "Rooms" },
+                        new { Id = 25, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view events", DisplayName = "View Events", IsSystemPermission = true, Module = "EventManagement", Name = "EventManagement.Events.View", Resource = "Events" },
+                        new { Id = 26, Action = "Create", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to create events", DisplayName = "Create Events", IsSystemPermission = true, Module = "EventManagement", Name = "EventManagement.Events.Create", Resource = "Events" },
+                        new { Id = 27, Action = "Edit", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to edit events", DisplayName = "Edit Events", IsSystemPermission = true, Module = "EventManagement", Name = "EventManagement.Events.Edit", Resource = "Events" },
+                        new { Id = 28, Action = "Delete", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to delete events", DisplayName = "Delete Events", IsSystemPermission = true, Module = "EventManagement", Name = "EventManagement.Events.Delete", Resource = "Events" },
+                        new { Id = 29, Action = "Approve", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to approve events", DisplayName = "Approve Events", IsSystemPermission = true, Module = "EventManagement", Name = "EventManagement.Events.Approve", Resource = "Events" },
+                        new { Id = 30, Action = "Reject", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to reject events", DisplayName = "Reject Events", IsSystemPermission = true, Module = "EventManagement", Name = "EventManagement.Events.Reject", Resource = "Events" },
+                        new { Id = 31, Action = "Cancel", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to cancel events", DisplayName = "Cancel Events", IsSystemPermission = true, Module = "EventManagement", Name = "EventManagement.Events.Cancel", Resource = "Events" },
+                        new { Id = 32, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view bookings", DisplayName = "View Bookings", IsSystemPermission = true, Module = "BookingManagement", Name = "BookingManagement.Bookings.View", Resource = "Bookings" },
+                        new { Id = 33, Action = "Create", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to create bookings", DisplayName = "Create Bookings", IsSystemPermission = true, Module = "BookingManagement", Name = "BookingManagement.Bookings.Create", Resource = "Bookings" },
+                        new { Id = 34, Action = "Edit", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to edit bookings", DisplayName = "Edit Bookings", IsSystemPermission = true, Module = "BookingManagement", Name = "BookingManagement.Bookings.Edit", Resource = "Bookings" },
+                        new { Id = 35, Action = "Delete", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to delete bookings", DisplayName = "Delete Bookings", IsSystemPermission = true, Module = "BookingManagement", Name = "BookingManagement.Bookings.Delete", Resource = "Bookings" },
+                        new { Id = 36, Action = "ViewAll", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to viewall bookings", DisplayName = "ViewAll Bookings", IsSystemPermission = true, Module = "BookingManagement", Name = "BookingManagement.Bookings.ViewAll", Resource = "Bookings" },
+                        new { Id = 37, Action = "Approve", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to approve bookings", DisplayName = "Approve Bookings", IsSystemPermission = true, Module = "BookingManagement", Name = "BookingManagement.Bookings.Approve", Resource = "Bookings" },
+                        new { Id = 38, Action = "Reject", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to reject bookings", DisplayName = "Reject Bookings", IsSystemPermission = true, Module = "BookingManagement", Name = "BookingManagement.Bookings.Reject", Resource = "Bookings" },
+                        new { Id = 39, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view reports", DisplayName = "View Reports", IsSystemPermission = true, Module = "ReportManagement", Name = "ReportManagement.Reports.View", Resource = "Reports" },
+                        new { Id = 40, Action = "Generate", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to generate reports", DisplayName = "Generate Reports", IsSystemPermission = true, Module = "ReportManagement", Name = "ReportManagement.Reports.Generate", Resource = "Reports" },
+                        new { Id = 41, Action = "Export", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to export reports", DisplayName = "Export Reports", IsSystemPermission = true, Module = "ReportManagement", Name = "ReportManagement.Reports.Export", Resource = "Reports" },
+                        new { Id = 42, Action = "View", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to view system configuration", DisplayName = "View Configuration", IsSystemPermission = true, Module = "SystemManagement", Name = "SystemManagement.Configuration.View", Resource = "Configuration" },
+                        new { Id = 43, Action = "Edit", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to edit system configuration", DisplayName = "Edit Configuration", IsSystemPermission = true, Module = "SystemManagement", Name = "SystemManagement.Configuration.Edit", Resource = "Configuration" },
+                        new { Id = 44, Action = "Backup", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to backup system configuration", DisplayName = "Backup Configuration", IsSystemPermission = true, Module = "SystemManagement", Name = "SystemManagement.Configuration.Backup", Resource = "Configuration" },
+                        new { Id = 45, Action = "Restore", CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), Description = "Permission to restore system configuration", DisplayName = "Restore Configuration", IsSystemPermission = true, Module = "SystemManagement", Name = "SystemManagement.Configuration.Restore", Resource = "Configuration" }
+                    );
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.RolePermission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("GrantedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GrantedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GrantedAt");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex("RoleId", "PermissionId")
+                        .IsUnique();
+
+                    b.ToTable("RolePermissions");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.UserRole", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("RoleId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AssignedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("AssignedAt");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetUserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -273,21 +720,6 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.ToTable("AspNetUserLogins", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("RoleId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("UserId", "RoleId");
-
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("AspNetUserRoles", (string)null);
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.Property<string>("UserId")
@@ -307,6 +739,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            // Relationships
             modelBuilder.Entity("CWA.FacilityManager.Domain.Models.CalendarTask", b =>
                 {
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "AssignedUser")
@@ -317,9 +750,76 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.Navigation("AssignedUser");
                 });
 
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Event", b =>
+                {
+                    b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CWA.FacilityManager.Domain.Models.Room", "Room")
+                        .WithMany("Events")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Room");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Room", b =>
+                {
+                    b.HasOne("CWA.FacilityManager.Domain.Models.Building", "Building")
+                        .WithMany("Rooms")
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Building");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.RolePermission", b =>
+                {
+                    b.HasOne("CWA.FacilityManager.Domain.Models.Permission", "Permission")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationRole", "Role")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.UserRole", b =>
+                {
+                    b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationRole", "Role")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "User")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -344,21 +844,6 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", null)
@@ -366,6 +851,34 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            // Navigation collections
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Building", b =>
+                {
+                    b.Navigation("Rooms");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Room", b =>
+                {
+                    b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.ApplicationRole", b =>
+                {
+                    b.Navigation("RolePermissions");
+
+                    b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("CWA.FacilityManager.Domain.Models.Permission", b =>
+                {
+                    b.Navigation("RolePermissions");
                 });
 #pragma warning restore 612, 618
         }
