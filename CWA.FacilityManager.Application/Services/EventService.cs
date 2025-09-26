@@ -17,6 +17,7 @@ namespace CWA.FacilityManager.Application.Services
         public async Task<IEnumerable<Event>> GetAllEventsAsync()
         {
             return await _context.Events
+                .AsNoTracking() // Prevent tracking for read-only operations
                 .Include(e => e.Room)
                     .ThenInclude(r => r.Building)
                 .Include(e => e.CreatedBy)
@@ -27,6 +28,7 @@ namespace CWA.FacilityManager.Application.Services
         public async Task<Event?> GetEventByIdAsync(int id)
         {
             return await _context.Events
+                .AsNoTracking() // Prevent tracking for read-only operations
                 .Include(e => e.Room)
                     .ThenInclude(r => r.Building)
                 .Include(e => e.CreatedBy)
@@ -36,6 +38,7 @@ namespace CWA.FacilityManager.Application.Services
         public async Task<IEnumerable<Event>> GetEventsByRoomAsync(int roomId)
         {
             return await _context.Events
+                .AsNoTracking() // Prevent tracking for read-only operations
                 .Include(e => e.Room)
                     .ThenInclude(r => r.Building)
                 .Include(e => e.CreatedBy)
@@ -47,6 +50,7 @@ namespace CWA.FacilityManager.Application.Services
         public async Task<IEnumerable<Event>> GetEventsByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             return await _context.Events
+                .AsNoTracking() // Prevent tracking for read-only operations
                 .Include(e => e.Room)
                     .ThenInclude(r => r.Building)
                 .Include(e => e.CreatedBy)
@@ -65,9 +69,28 @@ namespace CWA.FacilityManager.Application.Services
 
         public async Task<Event> UpdateEventAsync(Event eventItem)
         {
-            _context.Events.Update(eventItem);
+            // Get the existing entity from the database
+            var existingEvent = await _context.Events.FindAsync(eventItem.Id);
+            if (existingEvent == null)
+            {
+                throw new InvalidOperationException($"Event with ID {eventItem.Id} not found.");
+            }
+
+            // Update only the properties that can be changed
+            existingEvent.Title = eventItem.Title;
+            existingEvent.Description = eventItem.Description;
+            existingEvent.Type = eventItem.Type;
+            existingEvent.StartDateTime = eventItem.StartDateTime;
+            existingEvent.EndDateTime = eventItem.EndDateTime;
+            existingEvent.Organizer = eventItem.Organizer;
+            existingEvent.ContactEmail = eventItem.ContactEmail;
+            existingEvent.ExpectedAttendees = eventItem.ExpectedAttendees;
+            existingEvent.IsConfirmed = eventItem.IsConfirmed;
+            existingEvent.RoomId = eventItem.RoomId;
+            // Don't update CreatedAt or CreatedById - keep the original values
+
             await _context.SaveChangesAsync();
-            return eventItem;
+            return existingEvent;
         }
 
         public async Task<bool> DeleteEventAsync(int id)
@@ -95,6 +118,7 @@ namespace CWA.FacilityManager.Application.Services
         {
             var endDate = DateTime.UtcNow.AddDays(days);
             return await _context.Events
+                .AsNoTracking() // Prevent tracking for read-only operations
                 .Include(e => e.Room)
                     .ThenInclude(r => r.Building)
                 .Include(e => e.CreatedBy)

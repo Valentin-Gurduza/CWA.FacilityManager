@@ -1,4 +1,4 @@
-﻿@implements IDisposable
+@implements IDisposable
 @rendermode InteractiveServer
 
 @inject NavigationManager NavigationManager
@@ -22,18 +22,19 @@
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="buildings">
-                        <span class="bi bi-building-nav-menu" aria-hidden="true"></span> Buildings
+                    <NavLink class="nav-link" href="rooms">
+                        <span class="bi bi-door-open-nav-menu" aria-hidden="true"></span> Rooms
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="rooms">
-                        <span class="bi bi-door-open-nav-menu" aria-hidden="true"></span> Rooms
+                    <NavLink class="nav-link" href="events">
+                        <span class="bi bi-calendar-event-nav-menu" aria-hidden="true"></span> Events
                     </NavLink>
                 </div>
             </Authorized>
         </AuthorizeView>
 
+        <!-- Sample pages (kept from Merge-Test branch) -->
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="counter">
                 <span class="bi bi-plus-square-fill-nav-menu me-2" aria-hidden="true"></span> Counter
@@ -64,11 +65,11 @@
 
         <AuthorizeView Context="mainAuth" Policy="ActiveUser">
             <Authorized>
-                <!-- Administration Section - For Administrator and Secretary roles with Active status -->
+                <!-- Administration Section -->
                 <AuthorizeView Roles="Administrator,Secretary" Context="adminAuth" Policy="ActiveAdminOrSecretary">
                     <Authorized>
                         <div class="nav-item px-3 mt-3">
-                            <div class="admin-menu-header nav-link text-light fw-bold border-bottom border-secondary mb-2" 
+                            <div class="admin-menu-header nav-link text-light fw-bold border-bottom border-secondary mb-2"
                                  style="cursor: pointer; user-select: none;"
                                  @onclick="ToggleAdministration"
                                  @onclick:preventDefault="true">
@@ -81,19 +82,19 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         @if (isAdministrationExpanded)
                         {
                             <div class="admin-submenu">
-                                <!-- User Management - Available for both Administrator and Secretary -->
+                                <!-- User Management -->
                                 <div class="nav-item px-3 ps-4">
                                     <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/users">
                                         <span class="bi bi-people-fill me-2" aria-hidden="true"></span>
                                         <span>User Management</span>
                                     </NavLink>
                                 </div>
-                                        
-                                <!-- Role Management - Only for Administrator -->
+
+                                <!-- Role Management (Administrator only) -->
                                 <AuthorizeView Roles="Administrator" Context="roleMgmtAuth" Policy="ActiveAdmin">
                                     <Authorized>
                                         <div class="nav-item px-3 ps-4">
@@ -109,11 +110,11 @@
                     </Authorized>
                 </AuthorizeView>
 
-                <!-- Facility Management Section - For Administrator and Secretary roles -->
+                <!-- Facility Management Section -->
                 <AuthorizeView Roles="Administrator,Secretary" Context="facilityAuth" Policy="ActiveAdminOrSecretary">
                     <Authorized>
                         <div class="nav-item px-3 mt-3">
-                            <div class="admin-menu-header nav-link text-light fw-bold border-bottom border-secondary mb-2" 
+                            <div class="admin-menu-header nav-link text-light fw-bold border-bottom border-secondary mb-2"
                                  style="cursor: pointer; user-select: none;"
                                  @onclick="ToggleFacilityManagement"
                                  @onclick:preventDefault="true">
@@ -126,43 +127,34 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         @if (isFacilityManagementExpanded)
                         {
                             <div class="admin-submenu">
-                                <!-- Facilities -->
                                 <div class="nav-item px-3 ps-4">
                                     <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/facilities">
                                         <span class="bi bi-building me-2" aria-hidden="true"></span>
                                         <span>Facilities</span>
                                     </NavLink>
                                 </div>
-                                
-                                <!-- Rooms -->
                                 <div class="nav-item px-3 ps-4">
                                     <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/rooms">
                                         <span class="bi bi-door-open me-2" aria-hidden="true"></span>
                                         <span>Rooms</span>
                                     </NavLink>
                                 </div>
-                                
-                                <!-- Bookings -->
                                 <div class="nav-item px-3 ps-4">
                                     <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/bookings">
                                         <span class="bi bi-calendar-check me-2" aria-hidden="true"></span>
                                         <span>Bookings</span>
                                     </NavLink>
                                 </div>
-                                
-                                <!-- Events -->
                                 <div class="nav-item px-3 ps-4">
                                     <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/events">
                                         <span class="bi bi-calendar-event me-2" aria-hidden="true"></span>
                                         <span>Events</span>
                                     </NavLink>
                                 </div>
-                                
-                                <!-- Reports -->
                                 <div class="nav-item px-3 ps-4">
                                     <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/reports">
                                         <span class="bi bi-graph-up me-2" aria-hidden="true"></span>
@@ -174,7 +166,7 @@
                     </Authorized>
                 </AuthorizeView>
 
-                <!-- Renter-specific quick access (for Renters who don't see Administration) -->
+                <!-- Renter Quick Access -->
                 <AuthorizeView Roles="Renter" Context="renterAuth" Policy="ActiveUser">
                     <Authorized>
                         <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary">
@@ -182,19 +174,19 @@
                                 <span class="bi bi-calendar-check me-2" aria-hidden="true"></span> Quick Access
                             </div>
                         </div>
-                        
+
                         <div class="nav-item px-3 ps-4 renter-only">
                             <NavLink class="nav-link" href="facilities">
                                 <span class="bi bi-building me-2" aria-hidden="true"></span> Browse Facilities
                             </NavLink>
                         </div>
-                        
+
                         <div class="nav-item px-3 ps-4 renter-only">
                             <NavLink class="nav-link" href="bookings/my">
                                 <span class="bi bi-calendar-check me-2" aria-hidden="true"></span> My Bookings
                             </NavLink>
                         </div>
-                        
+
                         <div class="nav-item px-3 ps-4 renter-only">
                             <NavLink class="nav-link" href="events/my">
                                 <span class="bi bi-calendar-event me-2" aria-hidden="true"></span> My Events
@@ -203,7 +195,7 @@
                     </Authorized>
                 </AuthorizeView>
 
-                <!-- User Profile and Logout -->
+                <!-- Profile & Logout -->
                 <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary">
                     <NavLink class="nav-link" href="Account/Manage">
                         <span class="bi bi-person-fill-nav-menu me-2" aria-hidden="true"></span> @mainAuth.User.Identity?.Name
@@ -244,65 +236,52 @@
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
-        
-        // Auto-expand administration if we're on an admin page
-        if (currentUrl != null && currentUrl.StartsWith("admin/"))
-        {
-            if (currentUrl.StartsWith("admin/users") || currentUrl.StartsWith("admin/roles"))
-            {
-                isAdministrationExpanded = true;
-            }
-            else if (currentUrl.StartsWith("admin/facilities") || currentUrl.StartsWith("admin/rooms") || 
-                     currentUrl.StartsWith("admin/bookings") || currentUrl.StartsWith("admin/events") || 
-                     currentUrl.StartsWith("admin/reports"))
-            {
-                isFacilityManagementExpanded = true;
-            }
-        }
+
+        // Auto-expand menus based on initial location
+        ExpandForCurrentUrl();
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
-        
-        // Auto-expand administration if navigating to an admin page
-        if (currentUrl != null && currentUrl.StartsWith("admin/"))
-        {
-            if (currentUrl.StartsWith("admin/users") || currentUrl.StartsWith("admin/roles"))
-            {
-                isAdministrationExpanded = true;
-                isFacilityManagementExpanded = false;
-            }
-            else if (currentUrl.StartsWith("admin/facilities") || currentUrl.StartsWith("admin/rooms") || 
-                     currentUrl.StartsWith("admin/bookings") || currentUrl.StartsWith("admin/events") || 
-                     currentUrl.StartsWith("admin/reports"))
-            {
-                isFacilityManagementExpanded = true;
-                isAdministrationExpanded = false;
-            }
-        }
-        
+        ExpandForCurrentUrl();
         StateHasChanged();
+    }
+
+    private void ExpandForCurrentUrl()
+    {
+        if (string.IsNullOrEmpty(currentUrl))
+            return;
+
+        if (currentUrl.StartsWith("admin/users", StringComparison.OrdinalIgnoreCase) ||
+            currentUrl.StartsWith("admin/roles", StringComparison.OrdinalIgnoreCase))
+        {
+            isAdministrationExpanded = true;
+            isFacilityManagementExpanded = false;
+        }
+        else if (currentUrl.StartsWith("admin/facilities", StringComparison.OrdinalIgnoreCase) ||
+                 currentUrl.StartsWith("admin/rooms", StringComparison.OrdinalIgnoreCase) ||
+                 currentUrl.StartsWith("admin/bookings", StringComparison.OrdinalIgnoreCase) ||
+                 currentUrl.StartsWith("admin/events", StringComparison.OrdinalIgnoreCase) ||
+                 currentUrl.StartsWith("admin/reports", StringComparison.OrdinalIgnoreCase))
+        {
+            isFacilityManagementExpanded = true;
+            isAdministrationExpanded = false;
+        }
     }
 
     private void ToggleAdministration()
     {
         isAdministrationExpanded = !isAdministrationExpanded;
         if (isAdministrationExpanded)
-        {
-            isFacilityManagementExpanded = false; // Close other menu when opening this one
-        }
-        StateHasChanged();
+            isFacilityManagementExpanded = false;
     }
 
     private void ToggleFacilityManagement()
     {
         isFacilityManagementExpanded = !isFacilityManagementExpanded;
         if (isFacilityManagementExpanded)
-        {
-            isAdministrationExpanded = false; // Close other menu when opening this one
-        }
-        StateHasChanged();
+            isAdministrationExpanded = false;
     }
 
     public void Dispose()
@@ -310,4 +289,3 @@
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }
-
