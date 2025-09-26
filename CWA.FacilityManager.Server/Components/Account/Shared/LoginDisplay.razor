@@ -1,0 +1,33 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+
+<AuthorizeView>
+    <Authorized>
+        <div class="d-flex align-items-center">
+            <span class="me-3">Hello, @context.User.Identity?.Name!</span>
+            <a class="nav-link me-2" href="Account/Manage">
+                <i class="bi bi-person-fill me-1"></i>
+                Manage Account
+            </a>
+            <form action="Account/Logout" method="post" class="mb-0">
+                <AntiforgeryToken />
+                <button type="submit" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-bar-left me-1"></i>
+                    Logout
+                </button>
+            </form>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="d-flex align-items-center">
+            <a class="nav-link me-2" href="Account/Register">
+                <i class="bi bi-person-plus me-1"></i>
+                Register
+            </a>
+            <a class="nav-link" href="Account/Login">
+                <i class="bi bi-person me-1"></i>
+                Login
+            </a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>

@@ -24,14 +24,33 @@
     font-size: 1.1rem;
 }
 
+/* Base icon styling for nav menu icons using background images */
 .bi {
     display: inline-block;
     position: relative;
     width: 1.25rem;
     height: 1.25rem;
     margin-right: 0.75rem;
-    top: -1px;
+    top: 0; /* Changed from -1px to 0 for better alignment */
     background-size: cover;
+    vertical-align: baseline; /* Added for consistent alignment */
+}
+
+/* Override for Bootstrap Icons font icons (gear, people, shield icons) */
+.bi-gear-fill,
+.bi-people-fill,
+.bi-shield-check,
+.bi-chevron-up,
+.bi-chevron-down {
+    background: none !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 1rem !important;
+    vertical-align: baseline !important;
+    top: 0.05em !important;
+    margin-right: 0.5rem !important;
+    display: inline-block !important;
+    position: relative !important;
 }
 
 .bi-house-door-fill-nav-menu {
@@ -99,6 +118,16 @@
         width: 100%;
     }
 
+    /* Specific alignment for icons in nav links */
+    .nav-item ::deep .nav-link .bi {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        vertical-align: middle !important;
+        position: relative !important;
+        top: 0 !important;
+    }
+
 .nav-item ::deep a.active {
     background-color: rgba(255,255,255,0.37);
     color: white;
@@ -115,6 +144,73 @@
 
 .navbar-toggler:checked ~ .nav-scrollable {
     display: block;
+}
+
+/* Administration menu specific styling */
+.admin-menu-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    transition: background-color 0.2s ease;
+    padding: 0.5rem 0;
+    line-height: 1.5;
+    height: 3rem;
+    color: #d7d7d7;
+    border-radius: 4px;
+    width: 100% !important;
+}
+
+.admin-menu-header:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.admin-menu-header .d-flex {
+    align-items: center !important;
+}
+
+/* Fix for the gear icon and text alignment in the admin header */
+.admin-menu-header .d-flex .bi-gear-fill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    top: 0 !important;
+    margin-right: 0.5rem !important;
+    font-size: 1rem !important;
+}
+
+/* Dropdown icon alignment */
+.dropdown-icon {
+    font-size: 0.875rem !important;
+    vertical-align: middle !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 16px;
+    height: 16px;
+    position: relative !important;
+    top: 0 !important;
+    flex-shrink: 0;
+}
+
+/* Admin submenu styling */
+.admin-submenu .nav-item .nav-link {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.admin-submenu .nav-item .nav-link .bi {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    top: 0 !important;
+    margin-right: 0.5rem !important;
+    font-size: 1rem !important;
+    flex-shrink: 0 !important;
 }
 
 @media (min-width: 641px) {

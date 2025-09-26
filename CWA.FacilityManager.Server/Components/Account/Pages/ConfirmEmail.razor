@@ -5,15 +5,28 @@
 @using Microsoft.AspNetCore.WebUtilities
 
 @inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Confirm email</PageTitle>
 
-<h1>Confirm email</h1>
+<h1>Email Confirmation</h1>
 <StatusMessage Message="@statusMessage" />
+
+@if (isConfirmed)
+{
+    <div class="alert alert-success">
+        <h4><i class="fas fa-check-circle"></i> Email Confirmed Successfully!</h4>
+        <p>Thank you for confirming your email address. Your account now has full access to all features.</p>
+        <a href="/" class="btn btn-primary">
+            <i class="fas fa-home"></i> Continue to Application
+        </a>
+    </div>
+}
 
 @code {
     private string? statusMessage;
+    private bool isConfirmed = false;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -41,7 +54,22 @@
         {
             var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
             var result = await UserManager.ConfirmEmailAsync(user, code);
-            statusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
+            
+            if (result.Succeeded)
+            {
+                statusMessage = "Thank you for confirming your email.";
+                isConfirmed = true;
+                
+                // If the user is signed in, refresh their claims to include email confirmation
+                if (HttpContext.User.Identity?.IsAuthenticated == true)
+                {
+                    await SignInManager.RefreshSignInAsync(user);
+                }
+            }
+            else
+            {
+                statusMessage = "Error confirming your email.";
+            }
         }
     }
 }

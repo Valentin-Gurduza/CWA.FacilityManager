@@ -1,0 +1,435 @@
+@page "/admin/roles"
+@using CWA.FacilityManager.Application.DTOs.UserManagement
+@using CWA.FacilityManager.Application.Interfaces.UserManagement
+@using Microsoft.AspNetCore.Authorization
+@inject IRoleManagementService RoleManagementService
+@inject IPermissionService PermissionService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@attribute [Authorize(Policy = "ActiveAdmin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Role Management</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">
+                    <i class="bi bi-shield-check me-2"></i>Role Management
+                </h1>
+                <button class="btn btn-primary" @onclick="OpenCreateRoleModal">
+                    <i class="bi bi-plus-circle me-1"></i>Create New Role
+                </button>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Search Bar -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" placeholder="Search roles..." 
+                                           @bind="searchTerm" @onkeypress="OnSearchKeyPress" />
+                                    <button class="btn btn-outline-secondary" @onclick="SearchRoles">
+                                        Search
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select" @bind="statusFilter">
+                                    <option value="all">All Roles</option>
+                                    <option value="active">Active Only</option>
+                                    <option value="inactive">Inactive Only</option>
+                                    <option value="system">System Roles</option>
+                                    <option value="custom">Custom Roles</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roles Grid -->
+                <div class="row">
+                    @if (roles.Any())
+                    {
+                        @foreach (var role in roles)
+                        {
+                            <div class="col-lg-4 col-md-6 mb-4">
+                                <div class="card h-100 @(role.IsActive ? "" : "border-warning")">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <h5 class="card-title mb-0 me-2">@role.Name</h5>
+                                            @if (role.IsSystemRole)
+                                            {
+                                                <span class="badge bg-info">System</span>
+                                            }
+                                            @if (!role.IsActive)
+                                            {
+                                                <span class="badge bg-warning">Inactive</span>
+                                            }
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><button class="dropdown-item" @onclick="() => ViewRole(role)">
+                                                    <i class="bi bi-eye me-2"></i>View Details
+                                                </button></li>
+                                                @if (!role.IsSystemRole)
+                                                {
+                                                    <li><button class="dropdown-item" @onclick="() => EditRole(role)">
+                                                        <i class="bi bi-pencil me-2"></i>Edit Role
+                                                    </button></li>
+                                                }
+                                                <li><button class="dropdown-item" @onclick="() => ManagePermissions(role)">
+                                                    <i class="bi bi-key me-2"></i>Manage Permissions
+                                                </button></li>
+                                                @if (!role.IsSystemRole)
+                                                {
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    @if (role.IsActive)
+                                                    {
+                                                        <li><button class="dropdown-item text-warning" @onclick="() => DeactivateRole(role)">
+                                                            <i class="bi bi-pause-circle me-2"></i>Deactivate
+                                                        </button></li>
+                                                    }
+                                                    else
+                                                    {
+                                                        <li><button class="dropdown-item text-success" @onclick="() => ActivateRole(role)">
+                                                            <i class="bi bi-play-circle me-2"></i>Activate
+                                                        </button></li>
+                                                    }
+                                                    @if (role.UserCount == 0)
+                                                    {
+                                                        <li><button class="dropdown-item text-danger" @onclick="() => DeleteRole(role)">
+                                                            <i class="bi bi-trash me-2"></i>Delete
+                                                        </button></li>
+                                                    }
+                                                }
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrEmpty(role.Description))
+                                        {
+                                            <p class="card-text text-muted">@role.Description</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="card-text text-muted fst-italic">No description provided.</p>
+                                        }
+
+                                        <div class="row text-center">
+                                            <div class="col-6">
+                                                <div class="border-end">
+                                                    <h6 class="text-primary mb-1">@role.UserCount</h6>
+                                                    <small class="text-muted">Users</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <h6 class="text-success mb-1">@role.Permissions.Count</h6>
+                                                <small class="text-muted">Permissions</small>
+                                            </div>
+                                        </div>
+
+                                        @if (role.Priority > 0)
+                                        {
+                                            <div class="mt-3">
+                                                <small class="text-muted">
+                                                    Priority: <span class="fw-bold">@role.Priority</span>
+                                                </small>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="card-footer">
+                                        <small class="text-muted">
+                                            Created: @role.CreatedAt.ToString("MMM dd, yyyy")
+                                            @if (!string.IsNullOrEmpty(role.CreatedBy))
+                                            {
+                                                <span> by @role.CreatedBy</span>
+                                            }
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12">
+                            <div class="text-center p-5">
+                                <i class="bi bi-shield-exclamation display-1 text-muted"></i>
+                                <h5 class="mt-3">No roles found</h5>
+                                <p class="text-muted">Try adjusting your search criteria or create a new role.</p>
+                                <button class="btn btn-primary" @onclick="OpenCreateRoleModal">
+                                    <i class="bi bi-plus-circle me-1"></i>Create First Role
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Pagination -->
+                @if (totalPages > 1)
+                {
+                    <nav aria-label="Role pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(currentPage - 1)">Previous</button>
+                            </li>
+                            
+                            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                            {
+                                <li class="page-item @(i == currentPage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => GoToPage(i)">@i</button>
+                                </li>
+                            }
+                            
+                            <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                                <button class="page-link" @onclick="() => GoToPage(currentPage + 1)">Next</button>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => successMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @successMessage
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @errorMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<RoleDto> roles = new();
+    private bool isLoading = true;
+    private string searchTerm = string.Empty;
+    private string statusFilter = "all";
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 12; // Show 12 cards per page (3x4 grid)
+    private int totalRoles = 0;
+    private int totalPages => (int)Math.Ceiling((double)totalRoles / pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                roles = (await RoleManagementService.SearchRolesAsync(searchTerm)).ToList();
+                totalRoles = roles.Count;
+            }
+            else
+            {
+                var allRoles = await RoleManagementService.GetAllRolesAsync();
+
+                // Apply status filter
+                switch (statusFilter)
+                {
+                    case "active":
+                        allRoles = allRoles.Where(r => r.IsActive);
+                        break;
+                    case "inactive":
+                        allRoles = allRoles.Where(r => !r.IsActive);
+                        break;
+                    case "system":
+                        allRoles = allRoles.Where(r => r.IsSystemRole);
+                        break;
+                    case "custom":
+                        allRoles = allRoles.Where(r => !r.IsSystemRole);
+                        break;
+                }
+
+                totalRoles = allRoles.Count();
+                roles = allRoles
+                    .Skip((currentPage - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading roles: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchRoles()
+    {
+        currentPage = 1;
+        await LoadData();
+    }
+
+    private async Task OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchRoles();
+        }
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            await LoadData();
+        }
+    }
+
+    private void OpenCreateRoleModal()
+    {
+        Navigation.NavigateTo("/admin/roles/create");
+    }
+
+    private void ViewRole(RoleDto role)
+    {
+        Navigation.NavigateTo($"/admin/roles/{role.Id}");
+    }
+
+    private void EditRole(RoleDto role)
+    {
+        Navigation.NavigateTo($"/admin/roles/{role.Id}/edit");
+    }
+
+    private void ManagePermissions(RoleDto role)
+    {
+        Navigation.NavigateTo($"/admin/roles/{role.Id}/permissions");
+    }
+
+    private async Task ActivateRole(RoleDto role)
+    {
+        try
+        {
+            var result = await RoleManagementService.ActivateRoleAsync(role.Id, "System"); // In real app, use current user
+            if (result)
+            {
+                successMessage = $"Role '{role.Name}' has been activated.";
+                await LoadData();
+            }
+            else
+            {
+                errorMessage = "Failed to activate role.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error activating role: {ex.Message}";
+        }
+    }
+
+    private async Task DeactivateRole(RoleDto role)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Are you sure you want to deactivate the role '{role.Name}'? Users with this role may lose access to certain features.");
+        
+        if (confirmed)
+        {
+            try
+            {
+                var result = await RoleManagementService.DeactivateRoleAsync(role.Id, "System"); // In real app, use current user
+                if (result)
+                {
+                    successMessage = $"Role '{role.Name}' has been deactivated.";
+                    await LoadData();
+                }
+                else
+                {
+                    errorMessage = "Failed to deactivate role.";
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deactivating role: {ex.Message}";
+            }
+        }
+    }
+
+    private async Task DeleteRole(RoleDto role)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Are you sure you want to permanently delete the role '{role.Name}'? This action cannot be undone.");
+        
+        if (confirmed)
+        {
+            try
+            {
+                var result = await RoleManagementService.DeleteRoleAsync(role.Id, "System"); // In real app, use current user
+                if (result)
+                {
+                    successMessage = $"Role '{role.Name}' has been deleted.";
+                    await LoadData();
+                }
+                else
+                {
+                    errorMessage = "Failed to delete role.";
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deleting role: {ex.Message}";
+            }
+        }
+    }
+}
