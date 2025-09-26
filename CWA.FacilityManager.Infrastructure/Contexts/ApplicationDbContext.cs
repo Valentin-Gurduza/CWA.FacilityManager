@@ -7,20 +7,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CWA.FacilityManager.Infrastructure.Contexts
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string, IdentityUserClaim<string>, UserRole, IdentityUserLogin<string>, IdentityRoleClaim<string>, IdentityUserToken<string>>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string,
+        IdentityUserClaim<string>, UserRole, IdentityUserLogin<string>, IdentityRoleClaim<string>,
+        IdentityUserToken<string>>
     {
+        // Constructor (from Merge-Test branch)
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
 
-        // Rooms-task-cwa DbSets
-        public DbSet<Building> Buildings { get; set; }
-        public DbSet<Room> Rooms { get; set; }
-        public DbSet<Event> Events { get; set; }
-
-        // Merge-Test DbSets
-        public DbSet<Permission> Permissions { get; set; }
-        public DbSet<RolePermission> RolePermissions { get; set; }
+        // DbSets from both branches
+        public DbSet<CalendarTask> CalendarTasks { get; set; }           // From CalendarManagement
+        public DbSet<Building> Buildings { get; set; }                   // Rooms-task-cwa
+        public DbSet<Room> Rooms { get; set; }                           // Rooms-task-cwa
+        public DbSet<Event> Events { get; set; }                         // Rooms-task-cwa
+        public DbSet<Permission> Permissions { get; set; }               // Merge-Test
+        public DbSet<RolePermission> RolePermissions { get; set; }       // Merge-Test
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -132,7 +134,6 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.RoomNumber).HasMaxLength(20);
                 entity.Property(e => e.Description).HasMaxLength(500);
-                // Store Activity as integer (enum underlying value)
                 entity.Property(e => e.Activity).HasConversion<int>();
                 entity.Property(e => e.Date).IsRequired();
                 entity.Property(e => e.Time).IsRequired();
@@ -164,7 +165,43 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // Merge-Test: Seed default permissions and roles
+            // CalendarManagement: Configure CalendarTask entity
+            builder.Entity<CalendarTask>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.Color)
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Location)
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Category)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Tags)
+                    .HasMaxLength(500);
+
+                entity.HasOne(e => e.AssignedUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.AssignedUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(e => e.StartDate);
+                entity.HasIndex(e => e.EndDate);
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.AssignedUserId);
+                entity.HasIndex(e => e.Category);
+            });
+
+            // Seed (from Merge-Test)
             SeedDefaultPermissions(builder);
             SeedDefaultRoles(builder);
         }
@@ -173,13 +210,11 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
         {
             base.OnConfiguring(optionsBuilder);
 
-            // Enable sensitive data logging in development to help with debugging
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
             {
                 optionsBuilder.EnableSensitiveDataLogging();
             }
 
-            // Configure query tracking behavior
             optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.TrackAll);
         }
 
@@ -187,7 +222,6 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
         {
             var permissions = new List<Permission>();
             var permissionId = 1;
-            // Use a fixed date for seeding to avoid migration issues
             var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             // User Management Permissions
@@ -363,7 +397,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
             {
                 new ApplicationRole
                 {
-                    Id = "550e8400-e29b-41d4-a716-446655440001", // Static GUID for Administrator
+                    Id = "550e8400-e29b-41d4-a716-446655440001",
                     Name = "Administrator",
                     NormalizedName = "ADMINISTRATOR",
                     Description = "System administrator with full access to all features",
@@ -375,7 +409,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 },
                 new ApplicationRole
                 {
-                    Id = "550e8400-e29b-41d4-a716-446655440002", // Static GUID for Secretary
+                    Id = "550e8400-e29b-41d4-a716-446655440002",
                     Name = "Secretary",
                     NormalizedName = "SECRETARY",
                     Description = "Secretary with access to manage bookings, view reports, and manage facilities",
@@ -387,7 +421,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 },
                 new ApplicationRole
                 {
-                    Id = "550e8400-e29b-41d4-a716-446655440003", // Static GUID for Renter
+                    Id = "550e8400-e29b-41d4-a716-446655440003",
                     Name = "Renter",
                     NormalizedName = "RENTER",
                     Description = "Renter with access to view facilities and create booking requests",

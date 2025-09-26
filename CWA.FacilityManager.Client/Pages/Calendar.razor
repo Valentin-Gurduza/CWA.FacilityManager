@@ -1,0 +1,840 @@
+@page "/calendar"
+@using CWA.FacilityManager.Client.Services
+@using CWA.FacilityManager.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ICalendarTaskApiService CalendarTaskApiService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Task Calendar</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Task Calendar</h1>
+                <div>
+                    <button type="button" class="btn btn-primary" @onclick="ShowCreateModal">
+                        <i class="bi bi-plus-circle"></i> Add Task
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Filters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Status Filter</label>
+                        <select class="form-select" @bind="selectedStatus" @bind:after="ApplyFilters">
+                            <option value="">All Statuses</option>
+                            @foreach (var status in Enum.GetValues<TaskStatusDto>())
+                            {
+                                <option value="@((int)status)">@status</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Category Filter</label>
+                        <select class="form-select" @bind="selectedCategory" @bind:after="ApplyFilters">
+                            <option value="">All Categories</option>
+                            @foreach (var category in Enum.GetValues<TaskCategoryDto>())
+                            {
+                                <option value="@((int)category)">@category</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Search</label>
+                        <input type="text" class="form-control" @bind="searchTerm" @bind:after="ApplyFilters" placeholder="Search tasks..." />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    @if (filteredTasks != null)
+                    {
+                        <div class="mb-2">
+                            <strong>Total Tasks:</strong> @filteredTasks.Count()
+                        </div>
+                        <div class="mb-2">
+                            <strong>Pending:</strong> @filteredTasks.Count(t => t.Status == TaskStatusDto.Pending)
+                        </div>
+                        <div class="mb-2">
+                            <strong>In Progress:</strong> @filteredTasks.Count(t => t.Status == TaskStatusDto.InProgress)
+                        </div>
+                        <div class="mb-2">
+                            <strong>Completed:</strong> @filteredTasks.Count(t => t.Status == TaskStatusDto.Completed)
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>Calendar View</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn @(currentView == CalendarView.Day ? "btn-primary" : "btn-outline-primary") btn-sm" @onclick="() => ChangeView(CalendarView.Day)">Day</button>
+                            <button type="button" class="btn @(currentView == CalendarView.Week ? "btn-primary" : "btn-outline-primary") btn-sm" @onclick="() => ChangeView(CalendarView.Week)">Week</button>
+                            <button type="button" class="btn @(currentView == CalendarView.Month ? "btn-primary" : "btn-outline-primary") btn-sm" @onclick="() => ChangeView(CalendarView.Month)">Month</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (loading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (filteredTasks != null)
+                    {
+                        @if (currentView == CalendarView.Month)
+                        {
+                            <div class="calendar-header mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="PreviousMonth">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </button>
+                                    <h4>@currentDate.ToString("MMMM yyyy")</h4>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="NextMonth">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="calendar-grid">
+                                <div class="row">
+                                    @foreach (var dayName in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+                                    {
+                                        <div class="col text-center fw-bold py-2 border">@dayName</div>
+                                    }
+                                </div>
+                                @for (int week = 0; week < 6; week++)
+                                {
+                                    <div class="row">
+                                        @for (int day = 0; day < 7; day++)
+                                        {
+                                            var cellDate = GetCalendarCellDate(week, day);
+                                            var dayTasks = GetTasksForDate(cellDate);
+                                            var isCurrentMonth = cellDate.Month == currentDate.Month;
+
+                                            <div class="col border p-2 calendar-cell @(isCurrentMonth ? "" : "text-muted")" 
+                                                 style="min-height: 120px; @(cellDate.Date == DateTime.Today ? "background-color: #e3f2fd;" : "")">
+                                                <div class="fw-bold">@cellDate.Day</div>
+                                                @foreach (var task in dayTasks.Take(3))
+                                                {
+                                                    <div class="small task-item mt-1 p-1 rounded @(HasOverlappingTasks(task) ? "overlapping-task" : "")" 
+                                                         style="background-color: @(task.Color ?? GetPriorityColor(task.Priority)); cursor: pointer; color: white;"
+                                                         @onclick="() => ShowTaskDetails(task)"
+                                                         title="@(task.Title + (HasOverlappingTasks(task) ? " ?? This task overlaps with other tasks" : ""))">
+                                                        @task.Title
+                                                    </div>
+                                                }
+                                                @if (dayTasks.Count() > 3)
+                                                {
+                                                    <div class="small text-muted">+@(dayTasks.Count() - 3) more</div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="list-group">
+                                @foreach (var task in filteredTasks.OrderBy(t => t.StartDate).Take(50))
+                                {
+                                    <div class="list-group-item list-group-item-action @(HasOverlappingTasks(task) ? "border-warning" : "")" @onclick="() => ShowTaskDetails(task)">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                @if (HasOverlappingTasks(task))
+                                                {
+                                                    <span class="text-warning me-1" title="This task overlaps with other tasks">??</span>
+                                                }
+                                                @task.Title
+                                            </h6>
+                                            <small class="badge bg-@GetStatusBadgeColor(task.Status)">@task.Status</small>
+                                        </div>
+                                        <p class="mb-1">@task.Description</p>
+                                        <small>@task.StartDate.ToString("MMM dd, yyyy HH:mm") - @task.EndDate.ToString("MMM dd, yyyy HH:mm")</small>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center">
+                            <p>No tasks found.</p>
+                            <button type="button" class="btn btn-primary" @onclick="ShowCreateModal">
+                                <i class="bi bi-plus-circle"></i> Create Your First Task
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Creation/Edit Modal -->
+@if (showTaskModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @onclick="@(e => CloseModalOnBackdropClick(e))">
+        <div class="modal-dialog modal-lg" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(editingTask == null ? "Create New Task" : "Edit Task")</h5>
+                    <button type="button" class="btn-close" @onclick="HideTaskModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="taskModel" OnValidSubmit="SaveTaskAsync">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <InputText @bind-Value="taskModel.Title" class="form-control" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Category</label>
+                                    <InputSelect @bind-Value="taskModel.Category" class="form-select">
+                                        @foreach (var category in Enum.GetValues<TaskCategoryDto>())
+                                        {
+                                            <option value="@category">@category</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea @bind-Value="taskModel.Description" class="form-control" rows="3" />
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Start Date</label>
+                                    @if (taskModel.IsAllDay)
+                                    {
+                                        <InputDate @bind-Value="taskModel.StartDate" class="form-control" />
+                                    }
+                                    else
+                                    {
+                                        <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="taskModel.StartDate" class="form-control" />
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">End Date</label>
+                                    @if (taskModel.IsAllDay)
+                                    {
+                                        <InputDate @bind-Value="taskModel.EndDate" class="form-control" />
+                                    }
+                                    else
+                                    {
+                                        <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="taskModel.EndDate" class="form-control" />
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Priority</label>
+                                    <InputSelect @bind-Value="taskModel.Priority" class="form-select">
+                                        @foreach (var priority in Enum.GetValues<TaskPriorityDto>())
+                                        {
+                                            <option value="@priority">@priority</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Status</label>
+                                    <InputSelect @bind-Value="taskModel.Status" class="form-select">
+                                        @foreach (var status in Enum.GetValues<TaskStatusDto>())
+                                        {
+                                            <option value="@status">@status</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Color</label>
+                                    <InputText @bind-Value="taskModel.Color" class="form-control" type="color" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <InputText @bind-Value="taskModel.Location" class="form-control" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="taskModel.IsAllDay" class="form-check-input" id="isAllDay" />
+                                <label class="form-check-label" for="isAllDay">All Day Event</label>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="HideTaskModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span>Saving...</span>
+                                }
+                                else
+                                {
+                                    @(editingTask == null ? "Create" : "Update")
+                                }
+                            </button>
+                            @if (editingTask != null)
+                            {
+                                <button type="button" class="btn btn-danger" @onclick="DeleteTaskAsync" disabled="@isSaving">Delete</button>
+                            }
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showAlert)
+{
+    <div class="alert alert-@alertType alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;" role="alert">
+        @alertMessage
+        <button type="button" class="btn-close" @onclick="HideAlert" aria-label="Close"></button>
+    </div>
+}
+
+@code {
+    private IEnumerable<CalendarTaskDto>? tasks;
+    private IEnumerable<CalendarTaskDto>? filteredTasks;
+    private bool loading = true;
+    private DateTime currentDate = DateTime.Today;
+    private CalendarView currentView = CalendarView.Month;
+    private string searchTerm = string.Empty;
+    private string selectedStatus = string.Empty;
+    private string selectedCategory = string.Empty;
+    
+    private bool showTaskModal = false;
+    private CalendarTaskDto? editingTask = null;
+    private TaskFormModel taskModel = new();
+    private bool isSaving = false;
+    
+    // Overlap detection properties
+    private List<CalendarTaskDto> overlappingTasks = new();
+    private bool allowOverlap = false;
+    
+    // Alert properties
+    private bool showAlert = false;
+    private string alertMessage = string.Empty;
+    private string alertType = "success";
+
+    public enum CalendarView
+    {
+        Day,
+        Week,
+        Month
+    }
+
+    public class TaskFormModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime EndDate { get; set; } = DateTime.Today;
+        public bool IsAllDay { get; set; } = true;
+        public TaskPriorityDto Priority { get; set; } = TaskPriorityDto.Medium;
+        public TaskStatusDto Status { get; set; } = TaskStatusDto.Pending;
+        public string? Color { get; set; } = "#3788d8";
+        public string? Location { get; set; }
+        public TaskCategoryDto Category { get; set; } = TaskCategoryDto.Meeting;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTasks();
+    }
+
+    private async Task LoadTasks()
+    {
+        try
+        {
+            loading = true;
+            StateHasChanged();
+            
+            var loadedTasks = await CalendarTaskApiService.GetAllTasksAsync();
+            if (loadedTasks != null)
+            {
+                tasks = loadedTasks.ToList();
+            }
+            else
+            {
+                tasks = new List<CalendarTaskDto>();
+            }
+            
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            ShowAlert($"Error loading tasks: {ex.Message}", "danger");
+            tasks = new List<CalendarTaskDto>();
+            filteredTasks = new List<CalendarTaskDto>();
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        filteredTasks = tasks;
+
+        if (filteredTasks != null && !string.IsNullOrEmpty(selectedStatus) && int.TryParse(selectedStatus, out int statusValue))
+        {
+            filteredTasks = filteredTasks.Where(t => (int)t.Status == statusValue);
+        }
+
+        if (filteredTasks != null && !string.IsNullOrEmpty(selectedCategory) && int.TryParse(selectedCategory, out int categoryValue))
+        {
+            filteredTasks = filteredTasks.Where(t => (int)t.Category == categoryValue);
+        }
+
+        if (filteredTasks != null && !string.IsNullOrEmpty(searchTerm))
+        {
+            filteredTasks = filteredTasks.Where(t =>
+                t.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (t.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+        
+        StateHasChanged();
+    }
+
+    private bool HasOverlappingTasks(CalendarTaskDto task)
+    {
+        if (filteredTasks == null) return false;
+        
+        return filteredTasks.Any(t => t.Id != task.Id && TasksOverlap(task, t));
+    }
+
+    private bool TasksOverlap(CalendarTaskDto task1, CalendarTaskDto task2)
+    {
+        // Convert to common time representation for comparison
+        var task1Start = task1.IsAllDay ? task1.StartDate.Date : task1.StartDate;
+        var task1End = task1.IsAllDay ? task1.EndDate.Date.AddDays(1).AddTicks(-1) : task1.EndDate;
+        var task2Start = task2.IsAllDay ? task2.StartDate.Date : task2.StartDate;
+        var task2End = task2.IsAllDay ? task2.EndDate.Date.AddDays(1).AddTicks(-1) : task2.EndDate;
+        
+        // Tasks overlap if: task1Start < task2End AND task2Start < task1End
+        return task1Start < task2End && task2Start < task1End;
+    }
+
+    private void CheckForOverlaps()
+    {
+        overlappingTasks.Clear();
+        allowOverlap = false;
+        
+        if (filteredTasks == null) return;
+        
+        // Create a temporary task object for overlap checking
+        var tempTask = new CalendarTaskDto
+        {
+            Id = editingTask?.Id ?? 0,
+            StartDate = taskModel.StartDate,
+            EndDate = taskModel.EndDate,
+            IsAllDay = taskModel.IsAllDay
+        };
+        
+        overlappingTasks = filteredTasks.Where(t => t.Id != tempTask.Id && TasksOverlap(tempTask, t)).ToList();
+        StateHasChanged();
+    }
+
+    private void ChangeView(CalendarView view)
+    {
+        currentView = view;
+        StateHasChanged();
+    }
+
+    private void PreviousMonth()
+    {
+        currentDate = currentDate.AddMonths(-1);
+        StateHasChanged();
+    }
+
+    private void NextMonth()
+    {
+        currentDate = currentDate.AddMonths(1);
+        StateHasChanged();
+    }
+
+    private DateTime GetCalendarCellDate(int week, int day)
+    {
+        var firstDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
+        var startDate = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+        return startDate.AddDays(week * 7 + day);
+    }
+
+    private IEnumerable<CalendarTaskDto> GetTasksForDate(DateTime date)
+    {
+        if (filteredTasks == null) 
+        {
+            return Enumerable.Empty<CalendarTaskDto>();
+        }
+        
+        var targetDate = date.Date;
+        
+        var tasksForDate = filteredTasks.Where(t => 
+        {
+            DateTime taskStartDate, taskEndDate;
+            
+            if (t.IsAllDay)
+            {
+                taskStartDate = t.StartDate.Date;
+                taskEndDate = t.EndDate.Date;
+                
+                return targetDate >= taskStartDate && targetDate <= taskEndDate;
+            }
+            else
+            {
+                var startLocal = t.StartDate.Kind == DateTimeKind.Utc ? t.StartDate.ToLocalTime() : t.StartDate;
+                var endLocal = t.EndDate.Kind == DateTimeKind.Utc ? t.EndDate.ToLocalTime() : t.EndDate;
+                
+                taskStartDate = startLocal.Date;
+                taskEndDate = endLocal.Date;
+                
+                return targetDate >= taskStartDate && targetDate <= taskEndDate;
+            }
+        }).ToList();
+        
+        return tasksForDate;
+    }
+
+    private void ShowCreateModal()
+    {
+        editingTask = null;
+        var today = DateTime.Today;
+        taskModel = new TaskFormModel
+        {
+            StartDate = today,
+            EndDate = today,
+            IsAllDay = true
+        };
+        overlappingTasks.Clear();
+        allowOverlap = false;
+        showTaskModal = true;
+        StateHasChanged();
+    }
+
+    private void ShowTaskDetails(CalendarTaskDto task)
+    {
+        editingTask = task;
+        taskModel = new TaskFormModel
+        {
+            Title = task.Title,
+            Description = task.Description,
+            StartDate = task.StartDate,
+            EndDate = task.EndDate,
+            IsAllDay = task.IsAllDay,
+            Priority = task.Priority,
+            Status = task.Status,
+            Color = task.Color,
+            Location = task.Location,
+            Category = task.Category
+        };
+        overlappingTasks.Clear();
+        allowOverlap = false;
+        CheckForOverlaps();
+        showTaskModal = true;
+        StateHasChanged();
+    }
+
+    private void HideTaskModal()
+    {
+        showTaskModal = false;
+        editingTask = null;
+        isSaving = false;
+        overlappingTasks.Clear();
+        allowOverlap = false;
+        StateHasChanged();
+    }
+
+    private void CloseModalOnBackdropClick(MouseEventArgs e)
+    {
+        HideTaskModal();
+    }
+
+    private async Task SaveTaskAsync()
+    {
+        if (string.IsNullOrWhiteSpace(taskModel.Title))
+        {
+            ShowAlert("Title is required", "danger");
+            return;
+        }
+
+        // Check for overlaps if not explicitly allowed
+        if (overlappingTasks.Any() && !allowOverlap)
+        {
+            ShowAlert("Please resolve the overlap conflict before saving", "warning");
+            return;
+        }
+
+        try
+        {
+            isSaving = true;
+            StateHasChanged();
+
+            DateTime startDate, endDate;
+            
+            if (taskModel.IsAllDay)
+            {
+                startDate = DateTime.SpecifyKind(
+                    new DateTime(taskModel.StartDate.Year, taskModel.StartDate.Month, taskModel.StartDate.Day, 0, 0, 0), 
+                    DateTimeKind.Unspecified);
+                endDate = DateTime.SpecifyKind(
+                    new DateTime(taskModel.EndDate.Year, taskModel.EndDate.Month, taskModel.EndDate.Day, 23, 59, 59), 
+                    DateTimeKind.Unspecified);
+            }
+            else
+            {
+                startDate = DateTime.SpecifyKind(taskModel.StartDate, DateTimeKind.Unspecified);
+                endDate = DateTime.SpecifyKind(taskModel.EndDate, DateTimeKind.Unspecified);
+            }
+
+            if (editingTask == null)
+            {
+                var createDto = new CreateCalendarTaskDto
+                {
+                    Title = taskModel.Title,
+                    Description = taskModel.Description,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    IsAllDay = taskModel.IsAllDay,
+                    Priority = taskModel.Priority,
+                    Color = taskModel.Color,
+                    Location = taskModel.Location,
+                    Category = taskModel.Category
+                };
+
+                var result = await CalendarTaskApiService.CreateTaskAsync(createDto);
+                if (result != null)
+                {
+                    var message = overlappingTasks.Any() ? "Task created successfully (with overlaps)!" : "Task created successfully!";
+                    ShowAlert(message, "success");
+                    
+                    HideTaskModal();
+                    await LoadTasks();
+                }
+                else
+                {
+                    ShowAlert("Failed to create task", "danger");
+                    return;
+                }
+            }
+            else
+            {
+                var updateDto = new UpdateCalendarTaskDto
+                {
+                    Title = taskModel.Title,
+                    Description = taskModel.Description,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    IsAllDay = taskModel.IsAllDay,
+                    Priority = taskModel.Priority,
+                    Status = taskModel.Status,
+                    Color = taskModel.Color,
+                    Location = taskModel.Location,
+                    Category = taskModel.Category
+                };
+
+                var result = await CalendarTaskApiService.UpdateTaskAsync(editingTask.Id, updateDto);
+                if (result != null)
+                {
+                    var message = overlappingTasks.Any() ? "Task updated successfully (with overlaps)!" : "Task updated successfully!";
+                    ShowAlert(message, "success");
+                    
+                    HideTaskModal();
+                    await LoadTasks();
+                }
+                else
+                {
+                    ShowAlert("Failed to update task", "danger");
+                    return;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowAlert($"Error saving task: {ex.Message}", "danger");
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteTaskAsync()
+    {
+        if (editingTask != null)
+        {
+            try
+            {
+                isSaving = true;
+                StateHasChanged();
+
+                var result = await CalendarTaskApiService.DeleteTaskAsync(editingTask.Id);
+                if (result)
+                {
+                    ShowAlert("Task deleted successfully!", "success");
+                    HideTaskModal();
+                    await LoadTasks();
+                }
+                else
+                {
+                    ShowAlert("Failed to delete task", "danger");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowAlert($"Error deleting task: {ex.Message}", "danger");
+            }
+            finally
+            {
+                isSaving = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void ShowAlert(string message, string type)
+    {
+        alertMessage = message;
+        alertType = type;
+        showAlert = true;
+        StateHasChanged();
+
+        Task.Delay(5000).ContinueWith(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                showAlert = false;
+                StateHasChanged();
+            });
+        });
+    }
+
+    private void HideAlert()
+    {
+        showAlert = false;
+        StateHasChanged();
+    }
+
+    private string GetPriorityColor(TaskPriorityDto priority)
+    {
+        return priority switch
+        {
+            TaskPriorityDto.Low => "#28a745",
+            TaskPriorityDto.Medium => "#ffc107",
+            TaskPriorityDto.High => "#fd7e14",
+            TaskPriorityDto.Critical => "#dc3545",
+            _ => "#6c757d"
+        };
+    }
+
+    private string GetStatusBadgeColor(TaskStatusDto status)
+    {
+        return status switch
+        {
+            TaskStatusDto.Pending => "warning",
+            TaskStatusDto.InProgress => "primary",
+            TaskStatusDto.Completed => "success",
+            TaskStatusDto.Cancelled => "danger",
+            TaskStatusDto.OnHold => "secondary",
+            _ => "secondary"
+        };
+    }
+
+    private void OnAllDayChanged(ChangeEventArgs e)
+    {
+        taskModel.IsAllDay = (bool)(e.Value ?? false);
+        
+        if (taskModel.IsAllDay)
+        {
+            // For all-day events, reset to date only
+            taskModel.StartDate = taskModel.StartDate.Date;
+            taskModel.EndDate = taskModel.EndDate.Date;
+        }
+        else
+        {
+            // For timed events, set default times if dates are the same
+            if (taskModel.StartDate.Date == taskModel.EndDate.Date)
+            {
+                taskModel.StartDate = taskModel.StartDate.Date.AddHours(9); // 9 AM
+                taskModel.EndDate = taskModel.EndDate.Date.AddHours(10); // 10 AM
+            }
+        }
+        
+        CheckForOverlaps();
+        StateHasChanged();
+    }
+}
+
+<style>
+    .calendar-cell {
+        min-height: 120px;
+    }
+
+    .task-item {
+        font-size: 0.75rem;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    }
+
+    .calendar-grid .row {
+        margin: 0;
+    }
+
+    .calendar-grid .col {
+        padding: 0;
+    }
+
+    .position-fixed {
+        position: fixed !important;
+    }
+</style>
