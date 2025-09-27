@@ -1,0 +1,58 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using CWA.FacilityManager.Domain.Models
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SignInManager<ApplicationUser> SignInManager  
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+@code {
+    private Timer? _authCheckTimer;
+    private bool _isInitialized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_isInitialized)
+        {
+            await CheckAuthenticationStatus();
+            
+            // Set up periodic checks every 30 seconds
+            _authCheckTimer = new Timer(async _ => await CheckAuthenticationStatus(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+            _isInitialized = true;
+        }
+    }
+
+    private async Task CheckAuthenticationStatus()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                // Check if user is still active
+                var isActiveClaim = authState.User.FindFirst("IsActive");
+                if (isActiveClaim == null || !bool.TryParse(isActiveClaim.Value, out bool isActive) || !isActive)
+                {
+                    // User has been deactivated, sign them out
+                    await SignInManager.SignOutAsync();
+                    await JSRuntime.InvokeVoidAsync("alert", "Your account has been deactivated. You have been logged out.");
+                    Navigation.NavigateTo("/Account/Login", true);
+                    return;
+                }
+
+                // Additional checks can be added here (e.g., token expiry, role changes, etc.)
+            }
+        }
+        catch (Exception)
+        {
+            // Silently handle errors to avoid disrupting user experience
+        }
+    }
+
+    public void Dispose()
+    {
+        _authCheckTimer?.Dispose();
+    }
+}
