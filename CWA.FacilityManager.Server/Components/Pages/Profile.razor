@@ -1,0 +1,267 @@
+@page "/profile"
+@using CWA.FacilityManager.Shared.DTOs
+@using CWA.FacilityManager.Application.Interfaces
+@using System.ComponentModel.DataAnnotations
+@inject IUserProfileService UserProfileService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>User Profile</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-user-circle"></i> My Profile</h1>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (profile != null)
+    {
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <!-- Profile Info Card -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle"></i> Profile Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle fa-5x text-secondary"></i>
+                            </div>
+                            <h4 class="mt-2">@profile.FullName</h4>
+                            <p class="text-muted">@profile.Email</p>
+                        </div>
+                        <hr>
+                        <div class="profile-details">
+                            <p><strong>Department:</strong> @(profile.Department ?? "Not specified")</p>
+                            <p><strong>Position:</strong> @(profile.Position ?? "Not specified")</p>
+                            <p><strong>Phone:</strong> @(profile.PhoneNumber ?? "Not specified")</p>
+                            <p><strong>Member since:</strong> @profile.CreatedAt.ToString("MMMM yyyy")</p>
+                            <p><strong>Last login:</strong> @(profile.LastLoginAt?.ToString("MMM dd, yyyy") ?? "Never")</p>
+                        </div>
+                        @if (profile.Roles.Any())
+                        {
+                            <hr>
+                            <div class="mb-2">
+                                <strong>Roles:</strong>
+                            </div>
+                            <div class="roles">
+                                @foreach (var role in profile.Roles)
+                                {
+                                    <span class="badge bg-info me-1">@role</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <!-- Edit Profile Form -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-edit"></i> Edit Profile</h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="@updateModel" OnValidSubmit="@UpdateProfile">
+                            <DataAnnotationsValidator />
+
+                            @if (!string.IsNullOrEmpty(alertMessage))
+                            {
+                                <div class="alert @(alertType == "success" ? "alert-success" : "alert-danger")" role="alert">
+                                    @alertMessage
+                                </div>
+                            }
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="firstName" class="form-label">First Name</label>
+                                        <InputText id="firstName" class="form-control" @bind-Value="updateModel.FirstName" placeholder="Enter your first name" />
+                                        <ValidationMessage For="() => updateModel.FirstName" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="lastName" class="form-label">Last Name</label>
+                                        <InputText id="lastName" class="form-control" @bind-Value="updateModel.LastName" placeholder="Enter your last name" />
+                                        <ValidationMessage For="() => updateModel.LastName" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="department" class="form-label">Department</label>
+                                        <InputText id="department" class="form-control" @bind-Value="updateModel.Department" />
+                                        <ValidationMessage For="() => updateModel.Department" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="position" class="form-label">Position</label>
+                                        <InputText id="position" class="form-control" @bind-Value="updateModel.Position" />
+                                        <ValidationMessage For="() => updateModel.Position" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label">Phone Number</label>
+                                <InputText id="phoneNumber" class="form-control" @bind-Value="updateModel.PhoneNumber" />
+                                <ValidationMessage For="() => updateModel.PhoneNumber" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="bio" class="form-label">Bio</label>
+                                <InputTextArea id="bio" class="form-control" rows="3" @bind-Value="updateModel.Bio" />
+                                <ValidationMessage For="() => updateModel.Bio" />
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-success" disabled="@isUpdating">
+                                    @if (isUpdating)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        <span>Updating...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-save me-2"></i>
+                                        <span>Update Profile</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @errorMessage
+        </div>
+    }
+</div>
+
+@code {
+    private UserProfileDto? profile;
+    private UpdateUserProfileDto updateModel = new();
+    private bool isLoading = true;
+    private bool isUpdating = false;
+    private string? errorMessage;
+    private string? alertMessage;
+    private string alertType = "";
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfile();
+    }
+
+    private async Task LoadProfile()
+    {
+        try
+        {
+            isLoading = true;
+            
+            if (AuthenticationStateTask != null)
+            {
+                var authState = await AuthenticationStateTask;
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    profile = await UserProfileService.GetUserProfileAsync(userId);
+                    if (profile != null)
+                    {
+                        // Initialize update model with current profile data
+                        updateModel = new UpdateUserProfileDto
+                        {
+                            FirstName = profile.FirstName,
+                            LastName = profile.LastName,
+                            PhoneNumber = profile.PhoneNumber,
+                            Bio = profile.Bio,
+                            Department = profile.Department,
+                            Position = profile.Position
+                        };
+                    }
+                }
+                else
+                {
+                    errorMessage = "User not authenticated.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading profile: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateProfile()
+    {
+        try
+        {
+            isUpdating = true;
+            alertMessage = null;
+            
+            if (AuthenticationStateTask != null)
+            {
+                var authState = await AuthenticationStateTask;
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var success = await UserProfileService.UpdateUserProfileAsync(userId, updateModel);
+                    
+                    if (success)
+                    {
+                        alertMessage = "Profile updated successfully!";
+                        alertType = "success";
+                        await LoadProfile(); // Reload the profile to show updated data
+                    }
+                    else
+                    {
+                        alertMessage = "Failed to update profile.";
+                        alertType = "error";
+                    }
+                }
+                else
+                {
+                    alertMessage = "User not authenticated.";
+                    alertType = "error";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            alertMessage = $"Error updating profile: {ex.Message}";
+            alertType = "error";
+        }
+        finally
+        {
+            isUpdating = false;
+            StateHasChanged();
+        }
+    }
+}

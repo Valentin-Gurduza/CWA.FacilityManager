@@ -6,4 +6,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CWA.FacilityManager.Domain\CWA.FacilityManager.Domain.csproj" />
+    <ProjectReference Include="..\CWA.FacilityManager.Infrastructure\CWA.FacilityManager.Infrastructure.csproj" />
+    <ProjectReference Include="..\CWA.FacilityManager.Shared\CWA.FacilityManager.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+  </ItemGroup>
+
 </Project>

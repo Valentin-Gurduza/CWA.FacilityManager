@@ -18,11 +18,35 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+        <AuthorizeView>
+            <Authorized>
+                <!-- User Profile Section -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="profile">
+                        <span class="bi bi-person-circle-nav-menu" aria-hidden="true"></span> My Profile
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="history">
+                        <span class="bi bi-clock-history-nav-menu" aria-hidden="true"></span> My History
+                    </NavLink>
+                </div>
+
+                <!-- Facility Management -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="rooms">
+                        <span class="bi bi-building-nav-menu" aria-hidden="true"></span> Rooms
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="bookings">
+                        <span class="bi bi-calendar-check-nav-menu" aria-hidden="true"></span> My Bookings
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="weather">
@@ -30,17 +54,11 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-            </NavLink>
-        </div>
-
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Account Settings
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">

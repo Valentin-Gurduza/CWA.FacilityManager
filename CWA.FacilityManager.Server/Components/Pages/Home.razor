@@ -1,7 +1,171 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Facility Manager - Dashboard</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-home"></i> Welcome to CWA Facility Manager</h1>
+        </div>
+    </div>
 
-Welcome to your new app.
+    <AuthorizeView>
+        <Authorized>
+            <div class="row">
+                <!-- Profile Summary Card -->
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-user-circle"></i> My Profile</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                View and manage your profile information, including personal details, 
+                                department, and contact information.
+                            </p>
+                            <div class="d-grid gap-2">
+                                <a href="/profile" class="btn btn-primary">
+                                    <i class="fas fa-user-edit"></i> View Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History & Activity Card -->
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-history"></i> My History</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                Track your booking history and account activity. View past reservations 
+                                and monitor your account changes.
+                            </p>
+                            <div class="d-grid gap-2">
+                                <a href="/history" class="btn btn-info">
+                                    <i class="fas fa-list"></i> View History
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="col-lg-12 col-xl-4 mb-4">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Common actions you can perform:</p>
+                            <div class="d-grid gap-2">
+                                <a href="/rooms" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-building"></i> Browse Rooms
+                                </a>
+                                <a href="/bookings" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-calendar-plus"></i> New Booking
+                                </a>
+                                <a href="/Account/Manage" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-cog"></i> Account Settings
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Overview -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-star"></i> New Features</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="feature-item">
+                                        <div class="feature-icon text-primary">
+                                            <i class="fas fa-user-circle fa-3x"></i>
+                                        </div>
+                                        <h6 class="mt-2">Enhanced User Profiles</h6>
+                                        <p class="small text-muted">
+                                            Complete profile management with role-based access, 
+                                            department tracking, and personal information.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="feature-item">
+                                        <div class="feature-icon text-info">
+                                            <i class="fas fa-history fa-3x"></i>
+                                        </div>
+                                        <h6 class="mt-2">Activity Tracking</h6>
+                                        <p class="small text-muted">
+                                            Comprehensive history tracking including booking history, 
+                                            login activities, and profile changes.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="feature-item">
+                                        <div class="feature-icon text-success">
+                                            <i class="fas fa-shield-alt fa-3x"></i>
+                                        </div>
+                                        <h6 class="mt-2">Role-Based Access</h6>
+                                        <p class="small text-muted">
+                                            Three-tier role system: Administrator, Tenant, and Secretary 
+                                            with appropriate permissions for each role.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="text-center py-5">
+                <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                <h3>Welcome to CWA Facility Manager</h3>
+                <p class="lead">Please sign in to access your dashboard and manage facility bookings.</p>
+                <div class="mt-4">
+                    <a href="/Account/Login" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </a>
+                    <a href="/Account/Register" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-user-plus"></i> Register
+                    </a>
+                </div>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+<style>
+    .feature-item {
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+        background: #f8f9fa;
+        height: 100%;
+    }
+    
+    .feature-icon {
+        margin-bottom: 15px;
+    }
+    
+    .card {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: none;
+    }
+    
+    .card-header {
+        font-weight: 600;
+    }
+</style>

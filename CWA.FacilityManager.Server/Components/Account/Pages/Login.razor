@@ -3,8 +3,12 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using CWA.FacilityManager.Application.Interfaces
+@using CWA.FacilityManager.Domain.Enums
 
 @inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserProfileService UserProfileService
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
@@ -92,6 +96,31 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
+
+            // Update last login time and log the activity
+            try
+            {
+                var user = await UserManager.FindByEmailAsync(Input.Email);
+                if (user != null)
+                {
+                    user.LastLoginAt = DateTime.UtcNow;
+                    await UserManager.UpdateAsync(user);
+                    
+                    // Log the login activity
+                    await UserProfileService.AddUserHistoryAsync(
+                        user.Id, 
+                        UserHistoryType.Login, 
+                        "User logged in successfully",
+                        $"Login from IP: {HttpContext.Connection.RemoteIpAddress}"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error updating login information for user {Email}", Input.Email);
+                // Don't fail login if history logging fails
+            }
+
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)

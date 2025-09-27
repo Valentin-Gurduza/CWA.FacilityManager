@@ -1,0 +1,40 @@
+@page "/rooms"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Rooms</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-building"></i> Room Management</h1>
+        </div>
+    </div>
+
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle"></i>
+        <strong>Coming Soon!</strong> Room browsing and management functionality will be available here.
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Room Management Features</h5>
+                    <p class="card-text">This page will include:</p>
+                    <ul>
+                        <li>Browse available rooms</li>
+                        <li>View room details and amenities</li>
+                        <li>Check room availability</li>
+                        <li>Make room reservations</li>
+                        <li>Manage existing bookings</li>
+                    </ul>
+                    <p class="text-muted">
+                        For now, you can use the <a href="/profile" class="alert-link">Profile</a> and 
+                        <a href="/history" class="alert-link">History</a> pages to manage your account.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,437 @@
+@page "/history"
+@using CWA.FacilityManager.Shared.DTOs
+@using CWA.FacilityManager.Application.Interfaces
+@inject IUserProfileService UserProfileService
+@rendermode InteractiveServer
+
+<PageTitle>My History</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-history"></i> My History</h1>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="historyTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "bookings" ? "active" : "")" 
+                    id="bookings-tab" 
+                    type="button" 
+                    @onclick="@(() => SetActiveTab("bookings"))"
+                    aria-selected="@(activeTab == "bookings")">
+                <i class="fas fa-calendar-alt me-2"></i>Booking History
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "activity" ? "active" : "")" 
+                    id="activity-tab" 
+                    type="button" 
+                    @onclick="@(() => SetActiveTab("activity"))"
+                    aria-selected="@(activeTab == "activity")">
+                <i class="fas fa-list me-2"></i>Activity Log
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="historyTabContent">
+        <!-- Booking History Tab -->
+        <div class="tab-pane fade @(activeTab == "bookings" ? "show active" : "")" 
+             id="bookings" 
+             role="tabpanel" 
+             aria-labelledby="bookings-tab">
+            
+            @if (isLoadingBookings)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading booking history...</span>
+                    </div>
+                </div>
+            }
+            else if (bookingHistory.Any())
+            {
+                <div class="row">
+                    @foreach (var booking in bookingHistory)
+                    {
+                        <div class="col-lg-6 col-xl-4 mb-4">
+                            <div class="card h-100 @GetBookingCardClass(booking)">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="card-title mb-0">@booking.Title</h6>
+                                    <span class="badge @GetStatusBadgeClass(booking.Status)">@booking.StatusDisplay</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="booking-details">
+                                        <p class="mb-2">
+                                            <i class="fas fa-door-open text-primary me-2"></i>
+                                            <strong>Room:</strong> @booking.RoomName
+                                        </p>
+                                        <p class="mb-2">
+                                            <i class="fas fa-calendar text-success me-2"></i>
+                                            <strong>Date:</strong> @booking.StartDate.ToString("MMM dd, yyyy")
+                                        </p>
+                                        <p class="mb-2">
+                                            <i class="fas fa-clock text-info me-2"></i>
+                                            <strong>Time:</strong> @booking.StartDate.ToString("HH:mm") - @booking.EndDate.ToString("HH:mm")
+                                        </p>
+                                        @if (booking.AttendeeCount.HasValue)
+                                        {
+                                            <p class="mb-2">
+                                                <i class="fas fa-users text-warning me-2"></i>
+                                                <strong>Attendees:</strong> @booking.AttendeeCount
+                                            </p>
+                                        }
+                                        @if (booking.TotalCost.HasValue)
+                                        {
+                                            <p class="mb-2">
+                                                <i class="fas fa-dollar-sign text-success me-2"></i>
+                                                <strong>Cost:</strong> $@booking.TotalCost.Value.ToString("F2")
+                                            </p>
+                                        }
+                                        @if (!string.IsNullOrEmpty(booking.Description))
+                                        {
+                                            <p class="mb-2">
+                                                <i class="fas fa-file-alt text-secondary me-2"></i>
+                                                <strong>Description:</strong> @booking.Description
+                                            </p>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="card-footer text-muted small">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Created: @booking.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                
+                <!-- Load More Button -->
+                @if (canLoadMoreBookings)
+                {
+                    <div class="text-center mt-4">
+                        <button class="btn btn-outline-primary" @onclick="LoadMoreBookings" disabled="@isLoadingMoreBookings">
+                            @if (isLoadingMoreBookings)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Loading...</span>
+                            }
+                            else
+                            {
+                                <span>Load More</span>
+                            }
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No booking history found</h5>
+                    <p class="text-muted">You haven't made any bookings yet.</p>
+                </div>
+            }
+        </div>
+
+        <!-- Activity Log Tab -->
+        <div class="tab-pane fade @(activeTab == "activity" ? "show active" : "")" 
+             id="activity" 
+             role="tabpanel" 
+             aria-labelledby="activity-tab">
+            
+            @if (isLoadingActivity)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading activity history...</span>
+                    </div>
+                </div>
+            }
+            else if (userHistory.Any())
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <div class="timeline">
+                            @foreach (var activity in userHistory)
+                            {
+                                <div class="timeline-item">
+                                    <div class="timeline-marker @GetActivityMarkerClass(activity.HistoryType)">
+                                        <i class="@GetActivityIcon(activity.HistoryType)"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">@activity.Description</h6>
+                                                @if (!string.IsNullOrEmpty(activity.Details))
+                                                {
+                                                    <p class="text-muted small mb-1">@activity.Details</p>
+                                                }
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    @activity.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                                                </small>
+                                            </div>
+                                            <span class="badge @GetActivityBadgeClass(activity.HistoryType)">
+                                                @activity.HistoryTypeDisplay
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Load More Button -->
+                @if (canLoadMoreActivity)
+                {
+                    <div class="text-center mt-4">
+                        <button class="btn btn-outline-primary" @onclick="LoadMoreActivity" disabled="@isLoadingMoreActivity">
+                            @if (isLoadingMoreActivity)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Loading...</span>
+                            }
+                            else
+                            {
+                                <span>Load More</span>
+                            }
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No activity history found</h5>
+                    <p class="text-muted">No recent activities to display.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+        padding-left: 40px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -35px;
+        top: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+    }
+
+    .timeline-content {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        border-left: 3px solid #dee2e6;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: -20px;
+        top: 15px;
+        bottom: -15px;
+        width: 2px;
+        background: #dee2e6;
+    }
+</style>
+
+@code {
+    private string activeTab = "bookings";
+    private List<BookingHistoryDto> bookingHistory = new();
+    private List<UserHistoryDto> userHistory = new();
+    private bool isLoadingBookings = true;
+    private bool isLoadingActivity = false;
+    private bool isLoadingMoreBookings = false;
+    private bool isLoadingMoreActivity = false;
+    private bool canLoadMoreBookings = true;
+    private bool canLoadMoreActivity = true;
+    private int bookingPage = 1;
+    private int activityPage = 1;
+    private const int pageSize = 12;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBookingHistory();
+    }
+
+    private async Task SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        
+        if (tab == "activity" && !userHistory.Any() && !isLoadingActivity)
+        {
+            await LoadActivityHistory();
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task LoadBookingHistory()
+    {
+        try
+        {
+            isLoadingBookings = true;
+            
+            if (AuthenticationStateTask != null)
+            {
+                var authState = await AuthenticationStateTask;
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var newBookings = await UserProfileService.GetUserBookingHistoryAsync(userId, bookingPage, pageSize);
+                    bookingHistory.AddRange(newBookings);
+                    canLoadMoreBookings = newBookings.Count == pageSize;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Handle error silently for now
+        }
+        finally
+        {
+            isLoadingBookings = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadActivityHistory()
+    {
+        try
+        {
+            isLoadingActivity = true;
+            
+            if (AuthenticationStateTask != null)
+            {
+                var authState = await AuthenticationStateTask;
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var newActivities = await UserProfileService.GetUserHistoryAsync(userId, activityPage, pageSize);
+                    userHistory.AddRange(newActivities);
+                    canLoadMoreActivity = newActivities.Count == pageSize;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Handle error silently for now
+        }
+        finally
+        {
+            isLoadingActivity = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadMoreBookings()
+    {
+        bookingPage++;
+        isLoadingMoreBookings = true;
+        await LoadBookingHistory();
+        isLoadingMoreBookings = false;
+    }
+
+    private async Task LoadMoreActivity()
+    {
+        activityPage++;
+        isLoadingMoreActivity = true;
+        await LoadActivityHistory();
+        isLoadingMoreActivity = false;
+    }
+
+    private string GetBookingCardClass(BookingHistoryDto booking)
+    {
+        if (booking.IsUpcoming && booking.IsActive)
+            return "border-success";
+        if (booking.IsPastEvent && booking.IsActive)
+            return "border-info";
+        if (booking.Status == CWA.FacilityManager.Domain.Enums.BookingStatus.Cancelled)
+            return "border-danger";
+        return "";
+    }
+
+    private string GetStatusBadgeClass(CWA.FacilityManager.Domain.Enums.BookingStatus status)
+    {
+        return status switch
+        {
+            CWA.FacilityManager.Domain.Enums.BookingStatus.Confirmed => "bg-success",
+            CWA.FacilityManager.Domain.Enums.BookingStatus.Pending => "bg-warning",
+            CWA.FacilityManager.Domain.Enums.BookingStatus.Cancelled => "bg-danger",
+            CWA.FacilityManager.Domain.Enums.BookingStatus.Completed => "bg-info",
+            CWA.FacilityManager.Domain.Enums.BookingStatus.InProgress => "bg-primary",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetActivityMarkerClass(CWA.FacilityManager.Domain.Enums.UserHistoryType historyType)
+    {
+        return historyType switch
+        {
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.Login => "bg-success",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.Logout => "bg-secondary",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingCreated => "bg-primary",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingModified => "bg-info",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingCancelled => "bg-danger",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.ProfileUpdated => "bg-warning",
+            _ => "bg-dark"
+        };
+    }
+
+    private string GetActivityIcon(CWA.FacilityManager.Domain.Enums.UserHistoryType historyType)
+    {
+        return historyType switch
+        {
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.Login => "fas fa-sign-in-alt",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.Logout => "fas fa-sign-out-alt",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingCreated => "fas fa-plus",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingModified => "fas fa-edit",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingCancelled => "fas fa-times",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.ProfileUpdated => "fas fa-user-edit",
+            _ => "fas fa-info"
+        };
+    }
+
+    private string GetActivityBadgeClass(CWA.FacilityManager.Domain.Enums.UserHistoryType historyType)
+    {
+        return historyType switch
+        {
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.Login => "bg-success",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.Logout => "bg-secondary",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingCreated => "bg-primary",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingModified => "bg-info",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.BookingCancelled => "bg-danger",
+            CWA.FacilityManager.Domain.Enums.UserHistoryType.ProfileUpdated => "bg-warning",
+            _ => "bg-dark"
+        };
+    }
+}
