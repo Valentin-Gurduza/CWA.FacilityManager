@@ -19,52 +19,47 @@
             </NavLink>
         </div>
 
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="rooms">
-                        <span class="bi bi-door-open-nav-menu" aria-hidden="true"></span> Rooms
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="events">
-                        <span class="bi bi-calendar-event-nav-menu" aria-hidden="true"></span> Events
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-
-        <!-- Sample pages (kept from Merge-Test branch) -->
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu me-2" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu me-2" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="calendar">
-                        <span class="bi bi-calendar-nav-menu" aria-hidden="true"></span> Task Calendar
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu me-2" aria-hidden="true"></span> Auth Required
-            </NavLink>
-        </div>
-
         <AuthorizeView Context="mainAuth" Policy="ActiveUser">
             <Authorized>
+                <!-- User Profile Section (from User-profile-history) -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="profile">
+                        <span class="bi bi-person-circle-nav-menu me-2" aria-hidden="true"></span> My Profile
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="history">
+                        <span class="bi bi-clock-history-nav-menu me-2" aria-hidden="true"></span> My History
+                    </NavLink>
+                </div>
+
+                <!-- Basic Facility Access -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="rooms">
+                        <span class="bi bi-door-open-nav-menu me-2" aria-hidden="true"></span> Rooms
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="events">
+                        <span class="bi bi-calendar-event-nav-menu me-2" aria-hidden="true"></span> Events
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="bookings">
+                        <span class="bi bi-calendar-check-nav-menu me-2" aria-hidden="true"></span> My Bookings
+                    </NavLink>
+                </div>
+
+                <!-- Task Calendar (from Merge-Test) -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="calendar">
+                        <span class="bi bi-calendar-nav-menu me-2" aria-hidden="true"></span> Task Calendar
+                    </NavLink>
+                </div>
+
                 <!-- Administration Section -->
                 <AuthorizeView Roles="Administrator,Secretary" Context="adminAuth" Policy="ActiveAdminOrSecretary">
                     <Authorized>
@@ -194,8 +189,31 @@
                         </div>
                     </Authorized>
                 </AuthorizeView>
+            </Authorized>
+        </AuthorizeView>
 
-                <!-- Profile & Logout -->
+        <!-- Sample pages (kept for development) -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                <span class="bi bi-plus-square-fill-nav-menu me-2" aria-hidden="true"></span> Counter
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                <span class="bi bi-list-nested-nav-menu me-2" aria-hidden="true"></span> Weather
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="auth">
+                <span class="bi bi-lock-nav-menu me-2" aria-hidden="true"></span> Auth Required
+            </NavLink>
+        </div>
+
+        <AuthorizeView Context="mainAuth" Policy="ActiveUser">
+            <Authorized>
+                <!-- Profile & Account -->
                 <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary">
                     <NavLink class="nav-link" href="Account/Manage">
                         <span class="bi bi-person-fill-nav-menu me-2" aria-hidden="true"></span> @mainAuth.User.Identity?.Name

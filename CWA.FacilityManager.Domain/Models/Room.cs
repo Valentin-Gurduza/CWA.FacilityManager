@@ -21,8 +21,22 @@ namespace CWA.FacilityManager.Domain.Models
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string? Description { get; set; }
 
+        [StringLength(200)]
+        public string? Location { get; set; }
+
+        [StringLength(1000)]
+        public string? Equipment { get; set; }
+
         [Required(ErrorMessage = "Activity type is required")]
         public ActivityType Activity { get; set; } = ActivityType.Course;
+
+        public bool IsAvailable { get; set; } = true;
+        public bool IsActive { get; set; } = true;
+
+        public decimal? HourlyRate { get; set; }
+
+        [StringLength(500)]
+        public string? ImageUrl { get; set; }
 
         [Required(ErrorMessage = "Date is required")]
         public DateTime Date { get; set; } = DateTime.Today;
@@ -30,9 +44,8 @@ namespace CWA.FacilityManager.Domain.Models
         [Required(ErrorMessage = "Time is required")]
         public TimeSpan Time { get; set; } = TimeSpan.FromHours(9); // Default to 9:00 AM
 
-        public bool IsActive { get; set; } = true;
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Foreign key
         [Required(ErrorMessage = "Please select a building")]
@@ -40,6 +53,7 @@ namespace CWA.FacilityManager.Domain.Models
 
         // Navigation properties
         public virtual Building Building { get; set; } = null!;
+        public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public virtual ICollection<Event> Events { get; set; } = new List<Event>();
     }
 }

@@ -23,11 +23,15 @@
                         <h1 class="h2">
                             <i class="fas fa-door-open me-2"></i>Rooms Management
                         </h1>
-                        <div class="btn-group">
-                            <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
-                                <i class="fas fa-plus me-2"></i> Add New Room
-                            </button>
-                        </div>
+                        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                            <Authorized>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
+                                        <i class="fas fa-plus me-2"></i> Add New Room
+                                    </button>
+                                </div>
+                            </Authorized>
+                        </AuthorizeView>
                     </div>
                 </div>
             </div>
@@ -95,6 +99,29 @@
                 </div>
             }
 
+            <!-- User Profile Integration Notice (from User-profile-history branch) -->
+            <AuthorizeView Roles="Renter" Policy="ActiveUser">
+                <Authorized>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <div>
+                                        <strong>Room Booking Information</strong>
+                                        <p class="mb-0">
+                                            Browse available rooms below. For booking history and profile management, 
+                                            visit your <a href="/profile" class="alert-link">Profile</a> and 
+                                            <a href="/history" class="alert-link">History</a> pages.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+
             <!-- Rooms Grid -->
             <div class="row">
                 @if (rooms == null)
@@ -113,10 +140,20 @@
                                 <i class="fas fa-door-open fa-4x text-muted"></i>
                             </div>
                             <h4>No Rooms Available</h4>
-                            <p>Start by adding your first room to the system!</p>
-                            <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
-                                <i class="fas fa-plus me-2"></i> Add Your First Room
-                            </button>
+                            <p>
+                                @* Show different messages based on user role *@
+                                <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                                    <Authorized>Start by adding your first room to the system!</Authorized>
+                                    <NotAuthorized>No rooms are currently available for booking. Please contact an administrator.</NotAuthorized>
+                                </AuthorizeView>
+                            </p>
+                            <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                                <Authorized>
+                                    <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
+                                        <i class="fas fa-plus me-2"></i> Add Your First Room
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
                         </div>
                     </div>
                 }
@@ -130,25 +167,29 @@
                                     <h5 class="card-title mb-0 text-primary">
                                         @room.Name
                                     </h5>
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><button class="dropdown-item" @onclick="() => EditRoom(room)" type="button">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button></li>
-                                            <li><button class="dropdown-item text-danger" @onclick="() => DeleteRoom(room)" type="button">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </button></li>
-                                        </ul>
-                                    </div>
+                                    <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                                        <Authorized>
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><button class="dropdown-item" @onclick="() => EditRoom(room)" type="button">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </button></li>
+                                                    <li><button class="dropdown-item text-danger" @onclick="() => DeleteRoom(room)" type="button">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button></li>
+                                                </ul>
+                                            </div>
+                                        </Authorized>
+                                    </AuthorizeView>
                                 </div>
                                 <div class="card-body">
                                     <div class="room-info">
                                         <p class="mb-2">
                                             <i class="fas fa-building text-primary me-2"></i>
-                                            <strong>Building:</strong> @room.Building.Name
+                                            <strong>Building:</strong> @room.Building?.Name
                                         </p>
                                         @if (!string.IsNullOrEmpty(room.RoomNumber))
                                         {
@@ -182,159 +223,207 @@
                                         }
                                     </div>
                                 </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-grid gap-2">
+                                        <AuthorizeView Roles="Renter,Administrator,Secretary" Policy="ActiveUser">
+                                            <Authorized>
+                                                <button class="btn btn-outline-primary btn-sm" @onclick="() => BookRoom(room)" type="button">
+                                                    <i class="fas fa-calendar-plus me-1"></i> Book Room
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     }
                 }
             </div>
-        </div>
 
-        <!-- Add/Edit Room Modal -->
-        @if (showRoomModal)
-        {
-            <!-- Modal Backdrop -->
-            <div class="modal-backdrop fade show" @onclick="CloseModal"></div>
-            
-            <!-- Modal Dialog -->
-            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1060;">
-                <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content" @onclick:stopPropagation="true">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title">
-                                <i class="fas @(isEditMode ? "fa-edit" : "fa-plus") me-2"></i>
-                                @(isEditMode ? "Edit Room" : "Add New Room")
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+            <!-- Features Overview (from User-profile-history branch) -->
+            @if (rooms == null || !rooms.Any())
+            {
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-star"></i> Room Management Features</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">This platform provides comprehensive room management capabilities:</p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-check text-success me-2"></i> Browse available rooms</li>
+                                            <li><i class="fas fa-check text-success me-2"></i> View room details and amenities</li>
+                                            <li><i class="fas fa-check text-success me-2"></i> Check room availability</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-check text-success me-2"></i> Make room reservations</li>
+                                            <li><i class="fas fa-check text-success me-2"></i> Manage existing bookings</li>
+                                            <li><i class="fas fa-check text-success me-2"></i> Track booking history</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <EditForm Model="roomModel" OnValidSubmit="SaveRoom" Context="editContext">
-                            <DataAnnotationsValidator />
-                            <div class="modal-body">
-                                <ValidationSummary class="text-danger mb-3" />
-                                
-                                <!-- Room Name -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-tag me-1"></i>Room Name <span class="text-danger">*</span>
-                                    </label>
-                                    <InputText class="form-control form-control-lg" @bind-Value="roomModel.Name" 
-                                               placeholder="Enter room name (e.g., Conference Room A, Lab 101)" />
-                                    <ValidationMessage For="() => roomModel.Name" class="text-danger" />
-                                </div>
-
-                                <!-- Building Input -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-building me-1"></i>Building <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group">
-                                        <InputText class="form-control form-control-lg" @bind-Value="buildingName" 
-                                                   placeholder="Enter building name" list="buildingsList" />
-                                        <datalist id="buildingsList">
-                                            @if (buildings != null)
-                                            {
-                                                @foreach (var building in buildings)
-                                                {
-                                                    <option value="@building.Name"></option>
-                                                }
-                                            }
-                                        </datalist>
-                                    </div>
-                                    <div class="form-text">Start typing to see suggestions or enter a new building name</div>
-                                </div>
-
-                                <!-- Activity Selection -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-tasks me-1"></i>Activity Type <span class="text-danger">*</span>
-                                    </label>
-                                    <InputSelect class="form-select form-select-lg" @bind-Value="roomModel.Activity">
-                                        <option value="@ActivityType.Course">Course</option>
-                                        <option value="@ActivityType.Meeting">Meeting</option>
-                                        <option value="@ActivityType.Training">Training</option>
-                                    </InputSelect>
-                                    <ValidationMessage For="() => roomModel.Activity" class="text-danger" />
-                                    <div class="form-text">Select the primary activity type for this room</div>
-                                </div>
-
-                                <!-- Date and Time Section -->
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-calendar me-1"></i>Date <span class="text-danger">*</span>
-                                            </label>
-                                            <InputDate class="form-control" @bind-Value="roomModel.Date" />
-                                            <ValidationMessage For="() => roomModel.Date" class="text-danger" />
-                                            <div class="form-text">Select the date for room availability</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-clock me-1"></i>Time <span class="text-danger">*</span>
-                                            </label>
-                                            <InputText class="form-control" @bind-Value="timeInput" 
-                                                       type="time" placeholder="09:00" />
-                                            <ValidationMessage For="() => roomModel.Time" class="text-danger" />
-                                            <div class="form-text">Select the time for room availability</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Room Number and Capacity -->
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-door-open me-1"></i>Room Number
-                                            </label>
-                                            <InputText class="form-control" @bind-Value="roomModel.RoomNumber" 
-                                                       placeholder="e.g., A101, B-205" />
-                                            <div class="form-text">Optional room identifier</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-users me-1"></i>Capacity <span class="text-danger">*</span>
-                                            </label>
-                                            <InputNumber class="form-control" @bind-Value="roomModel.Capacity" 
-                                                         min="1" placeholder="Enter maximum capacity" />
-                                            <ValidationMessage For="() => roomModel.Capacity" class="text-danger" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Description -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-align-left me-1"></i>Description
-                                    </label>
-                                    <InputTextArea class="form-control" rows="3" @bind-Value="roomModel.Description" 
-                                                   placeholder="Room description, equipment, special features..." />
-                                    <div class="form-text">Optional additional information</div>
-                                </div>
-                            </div>
-                            
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" @onclick="CloseModal">
-                                    <i class="fas fa-times me-1"></i> Cancel
-                                </button>
-                                <button type="submit" class="btn btn-primary" disabled="@isProcessing">
-                                    @if (isProcessing)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                    }
-                                    <i class="fas @(isEditMode ? "fa-save" : "fa-plus") me-1"></i>
-                                    @(isEditMode ? "Update Room" : "Add Room")
-                                </button>
-                            </div>
-                        </EditForm>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
+
+        <!-- Add/Edit Room Modal (Admin/Secretary only) -->
+        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+            <Authorized>
+                @if (showRoomModal)
+                {
+                    <!-- Modal Backdrop -->
+                    <div class="modal-backdrop fade show" @onclick="CloseModal"></div>
+                    
+                    <!-- Modal Dialog -->
+                    <div class="modal fade show d-block" tabindex="-1" style="z-index: 1060;">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content" @onclick:stopPropagation="true">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title">
+                                        <i class="fas @(isEditMode ? "fa-edit" : "fa-plus") me-2"></i>
+                                        @(isEditMode ? "Edit Room" : "Add New Room")
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                                </div>
+                                
+                                <EditForm Model="roomModel" OnValidSubmit="SaveRoom" Context="editContext">
+                                    <DataAnnotationsValidator />
+                                    <div class="modal-body">
+                                        <ValidationSummary class="text-danger mb-3" />
+                                        
+                                        <!-- Room Name -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-tag me-1"></i>Room Name <span class="text-danger">*</span>
+                                            </label>
+                                            <InputText class="form-control form-control-lg" @bind-Value="roomModel.Name" 
+                                                       placeholder="Enter room name (e.g., Conference Room A, Lab 101)" />
+                                            <ValidationMessage For="() => roomModel.Name" class="text-danger" />
+                                        </div>
+
+                                        <!-- Building Input -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-building me-1"></i>Building <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <InputText class="form-control form-control-lg" @bind-Value="buildingName" 
+                                                           placeholder="Enter building name" list="buildingsList" />
+                                                <datalist id="buildingsList">
+                                                    @if (buildings != null)
+                                                    {
+                                                        @foreach (var building in buildings)
+                                                        {
+                                                            <option value="@building.Name"></option>
+                                                        }
+                                                    }
+                                                </datalist>
+                                            </div>
+                                            <div class="form-text">Start typing to see suggestions or enter a new building name</div>
+                                        </div>
+
+                                        <!-- Activity Selection -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-tasks me-1"></i>Activity Type <span class="text-danger">*</span>
+                                            </label>
+                                            <InputSelect class="form-select form-select-lg" @bind-Value="roomModel.Activity">
+                                                <option value="@ActivityType.Course">Course</option>
+                                                <option value="@ActivityType.Meeting">Meeting</option>
+                                                <option value="@ActivityType.Training">Training</option>
+                                            </InputSelect>
+                                            <ValidationMessage For="() => roomModel.Activity" class="text-danger" />
+                                            <div class="form-text">Select the primary activity type for this room</div>
+                                        </div>
+
+                                        <!-- Date and Time Section -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">
+                                                        <i class="fas fa-calendar me-1"></i>Date <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputDate class="form-control" @bind-Value="roomModel.Date" />
+                                                    <ValidationMessage For="() => roomModel.Date" class="text-danger" />
+                                                    <div class="form-text">Select the date for room availability</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">
+                                                        <i class="fas fa-clock me-1"></i>Time <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText class="form-control" @bind-Value="timeInput" 
+                                                               type="time" placeholder="09:00" />
+                                                    <ValidationMessage For="() => roomModel.Time" class="text-danger" />
+                                                    <div class="form-text">Select the time for room availability</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Room Number and Capacity -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">
+                                                        <i class="fas fa-door-open me-1"></i>Room Number
+                                                    </label>
+                                                    <InputText class="form-control" @bind-Value="roomModel.RoomNumber" 
+                                                               placeholder="e.g., A101, B-205" />
+                                                    <div class="form-text">Optional room identifier</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold">
+                                                        <i class="fas fa-users me-1"></i>Capacity <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputNumber class="form-control" @bind-Value="roomModel.Capacity" 
+                                                                 min="1" placeholder="Enter maximum capacity" />
+                                                    <ValidationMessage For="() => roomModel.Capacity" class="text-danger" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Description -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-align-left me-1"></i>Description
+                                            </label>
+                                            <InputTextArea class="form-control" rows="3" @bind-Value="roomModel.Description" 
+                                                           placeholder="Room description, equipment, special features..." />
+                                            <div class="form-text">Optional additional information</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">
+                                            <i class="fas fa-times me-1"></i> Cancel
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" disabled="@isProcessing">
+                                            @if (isProcessing)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            }
+                                            <i class="fas @(isEditMode ? "fa-save" : "fa-plus") me-1"></i>
+                                            @(isEditMode ? "Update Room" : "Add Room")
+                                        </button>
+                                    </div>
+                                </EditForm>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </Authorized>
+        </AuthorizeView>
     </Authorized>
     <NotAuthorized>
         <div class="container-fluid">
@@ -574,6 +663,13 @@
         }
     }
 
+    private void BookRoom(Room room)
+    {
+        // Navigate to booking page or show booking modal
+        // For now, just show a message
+        ShowStatusMessage($"Booking functionality for '{room.Name}' coming soon!", "success");
+    }
+
     private void ShowStatusMessage(string message, string type)
     {
         statusMessage = message;
@@ -656,5 +752,19 @@
 
     .room-info i {
         width: 20px;
+    }
+
+    .feature-item {
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+        background: #f8f9fa;
+        height: 100%;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .feature-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 </style>

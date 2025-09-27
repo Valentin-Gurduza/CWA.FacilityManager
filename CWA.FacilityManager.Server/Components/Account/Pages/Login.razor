@@ -1,13 +1,16 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using CWA.FacilityManager.Application.Interfaces
+@using CWA.FacilityManager.Domain.Enums
 @using CWA.FacilityManager.Domain.Models
 @using CWA.FacilityManager.Server.Services
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
+@inject IUserProfileService UserProfileService
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
@@ -155,24 +158,41 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in: {Email}", Input.Email);
-            
-            // Update last login time
-            if (user != null)
-            {
-                user.LastLoginAt = DateTime.UtcNow;
-                await UserManager.UpdateAsync(user);
 
-                // Create claims principal to check user permissions for redirect
-                var claimsPrincipal = await SignInManager.CreateUserPrincipalAsync(user);
-                
-                // Validate return URL based on user's roles
-                var validReturnUrl = await RoleBasedRedirectService.GetValidReturnUrlAsync(ReturnUrl, claimsPrincipal);
-                
-                Logger.LogInformation("User {Email} redirected to: {ReturnUrl}", Input.Email, validReturnUrl);
-                RedirectManager.RedirectTo(validReturnUrl);
-            }
-            else
+            // Update last login time and log the activity
+            try
             {
+                if (user != null)
+                {
+                    user.LastLoginAt = DateTime.UtcNow;
+                    await UserManager.UpdateAsync(user);
+                    
+                    // Log the login activity (from User-profile-history branch)
+                    await UserProfileService.AddUserHistoryAsync(
+                        user.Id, 
+                        UserHistoryType.Login, 
+                        "User logged in successfully",
+                        $"Login from IP: {HttpContext.Connection.RemoteIpAddress}"
+                    );
+
+                    // Create claims principal to check user permissions for redirect (from Merge-Test branch)
+                    var claimsPrincipal = await SignInManager.CreateUserPrincipalAsync(user);
+                    
+                    // Validate return URL based on user's roles
+                    var validReturnUrl = await RoleBasedRedirectService.GetValidReturnUrlAsync(ReturnUrl, claimsPrincipal);
+                    
+                    Logger.LogInformation("User {Email} redirected to: {ReturnUrl}", Input.Email, validReturnUrl);
+                    RedirectManager.RedirectTo(validReturnUrl);
+                }
+                else
+                {
+                    RedirectManager.RedirectTo(ReturnUrl);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error updating login information for user {Email}", Input.Email);
+                // Don't fail login if history logging fails, but still redirect
                 RedirectManager.RedirectTo(ReturnUrl);
             }
         }

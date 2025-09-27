@@ -11,24 +11,26 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
         IdentityUserClaim<string>, UserRole, IdentityUserLogin<string>, IdentityRoleClaim<string>,
         IdentityUserToken<string>>
     {
-        // Constructor (from Merge-Test branch)
+        // Constructor
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
 
-        // DbSets from both branches
-        public DbSet<CalendarTask> CalendarTasks { get; set; }           // From CalendarManagement
-        public DbSet<Building> Buildings { get; set; }                   // Rooms-task-cwa
-        public DbSet<Room> Rooms { get; set; }                           // Rooms-task-cwa
-        public DbSet<Event> Events { get; set; }                         // Rooms-task-cwa
-        public DbSet<Permission> Permissions { get; set; }               // Merge-Test
-        public DbSet<RolePermission> RolePermissions { get; set; }       // Merge-Test
+        // DbSets from all branches
+        public DbSet<Room> Rooms { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
+        public DbSet<UserHistory> UserHistories { get; set; }
+        public DbSet<CalendarTask> CalendarTasks { get; set; }
+        public DbSet<Building> Buildings { get; set; }
+        public DbSet<Event> Events { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // Merge-Test: Configure ApplicationUser
+            // Configure ApplicationUser (combining both approaches)
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.Property(e => e.FirstName).HasMaxLength(100);
@@ -38,25 +40,37 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.CreatedBy).HasMaxLength(450);
                 entity.Property(e => e.ModifiedBy).HasMaxLength(450);
                 entity.Property(e => e.ProfilePictureUrl).HasMaxLength(500);
+                
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.CreatedAt);
                 entity.HasIndex(e => e.Department);
+
+                // Navigation properties from User-profile-history
+                entity.HasMany(u => u.Bookings)
+                    .WithOne(b => b.User)
+                    .HasForeignKey(b => b.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(u => u.UserHistories)
+                    .WithOne(h => h.User)
+                    .HasForeignKey(h => h.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Merge-Test: Configure ApplicationRole
+            // Configure ApplicationRole
             builder.Entity<ApplicationRole>(entity =>
             {
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.CreatedBy).HasMaxLength(450);
                 entity.Property(e => e.ModifiedBy).HasMaxLength(450);
-                entity.Property(e => e.RoleType).HasConversion<int>(); // Store enum as int
+                entity.Property(e => e.RoleType).HasConversion<int>();
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.Priority);
                 entity.HasIndex(e => e.IsSystemRole);
                 entity.HasIndex(e => e.RoleType);
             });
 
-            // Merge-Test: Configure UserRole (junction table)
+            // Configure UserRole (junction table)
             builder.Entity<UserRole>(entity =>
             {
                 entity.HasKey(ur => new { ur.UserId, ur.RoleId });
@@ -79,7 +93,58 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Merge-Test: Configure Permission
+            // Configure Room (combining both approaches)
+            builder.Entity<Room>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.RoomNumber).HasMaxLength(20);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Location).HasMaxLength(200);
+                entity.Property(e => e.Equipment).HasMaxLength(1000);
+                entity.Property(e => e.ImageUrl).HasMaxLength(500);
+                entity.Property(e => e.Activity).HasConversion<int>();
+                entity.Property(r => r.HourlyRate).HasPrecision(18, 2);
+
+                // Relationships
+                entity.HasMany(r => r.Bookings)
+                    .WithOne(b => b.Room)
+                    .HasForeignKey(b => b.RoomId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.Building)
+                    .WithMany(b => b.Rooms)
+                    .HasForeignKey(r => r.BuildingId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(r => r.Events)
+                    .WithOne(e => e.Room)
+                    .HasForeignKey(e => e.RoomId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure Booking (from User-profile-history)
+            builder.Entity<Booking>(entity =>
+            {
+                entity.HasKey(b => b.Id);
+                entity.Property(b => b.TotalCost).HasPrecision(18, 2);
+
+                entity.HasIndex(b => new { b.RoomId, b.StartDate, b.EndDate })
+                    .HasDatabaseName("IX_Booking_Room_DateRange");
+
+                entity.HasIndex(b => b.UserId)
+                    .HasDatabaseName("IX_Booking_UserId");
+            });
+
+            // Configure UserHistory (from User-profile-history)
+            builder.Entity<UserHistory>(entity =>
+            {
+                entity.HasKey(h => h.Id);
+                entity.HasIndex(h => new { h.UserId, h.CreatedAt })
+                    .HasDatabaseName("IX_UserHistory_User_Date");
+            });
+
+            // Configure Permission
             builder.Entity<Permission>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -97,7 +162,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasIndex(e => e.IsSystemPermission);
             });
 
-            // Merge-Test: Configure RolePermission (junction table)
+            // Configure RolePermission (junction table)
             builder.Entity<RolePermission>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -118,7 +183,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Rooms-task-cwa: Configure Building entity
+            // Configure Building entity
             builder.Entity<Building>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -127,24 +192,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.Description).HasMaxLength(500);
             });
 
-            // Rooms-task-cwa: Configure Room entity
-            builder.Entity<Room>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.RoomNumber).HasMaxLength(20);
-                entity.Property(e => e.Description).HasMaxLength(500);
-                entity.Property(e => e.Activity).HasConversion<int>();
-                entity.Property(e => e.Date).IsRequired();
-                entity.Property(e => e.Time).IsRequired();
-
-                entity.HasOne(r => r.Building)
-                    .WithMany(b => b.Rooms)
-                    .HasForeignKey(r => r.BuildingId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // Rooms-task-cwa: Configure Event entity
+            // Configure Event entity
             builder.Entity<Event>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -154,18 +202,13 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.ContactEmail).HasMaxLength(200);
                 entity.Property(e => e.Type).HasConversion<string>();
 
-                entity.HasOne(e => e.Room)
-                    .WithMany(r => r.Events)
-                    .HasForeignKey(e => e.RoomId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
                 entity.HasOne(e => e.CreatedBy)
                     .WithMany()
                     .HasForeignKey(e => e.CreatedById)
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // CalendarManagement: Configure CalendarTask entity
+            // Configure CalendarTask entity
             builder.Entity<CalendarTask>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -201,7 +244,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasIndex(e => e.Category);
             });
 
-            // Seed (from Merge-Test)
+            // Seed data
             SeedDefaultPermissions(builder);
             SeedDefaultRoles(builder);
         }

@@ -1,0 +1,39 @@
+@page "/bookings"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>My Bookings</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-calendar-check"></i> My Bookings</h1>
+        </div>
+    </div>
+
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle"></i>
+        <strong>Coming Soon!</strong> Booking management functionality will be available here.
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Booking Management Features</h5>
+                    <p class="card-text">This page will include:</p>
+                    <ul>
+                        <li>View current bookings</li>
+                        <li>Create new reservations</li>
+                        <li>Modify existing bookings</li>
+                        <li>Cancel reservations</li>
+                        <li>View booking details and costs</li>
+                    </ul>
+                    <p class="text-muted">
+                        You can view your booking history on the <a href="/history" class="alert-link">History</a> page.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
