@@ -80,10 +80,83 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser()
               .RequireClaim("IsActive", "True")
               .RequireRole("Administrator", "Secretary"));
+
+    // Role-level based policies
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.AdministratorOnly, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Administrator)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.SecretaryOrHigher, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Secretary)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.RenterOrHigher, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Renter)));
+
+    // Feature-based policies
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanManageUsers, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Administrator)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanManageRoles, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Administrator)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanManageEvents, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Secretary)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanApproveEvents, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Secretary)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanManageRooms, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Secretary)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanManageBuildings, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Administrator)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanViewAllReservations, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Secretary)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanManageReservations, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Secretary)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanCreateReservations, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Renter)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanViewReports, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Secretary)));
+
+    options.AddPolicy(CWA.FacilityManager.Application.Authorization.Policies.CanManageSystem, policy =>
+        policy.RequireAuthenticatedUser()
+              .Requirements.Add(new CWA.FacilityManager.Application.Authorization.RoleLevelRequirement(
+                  CWA.FacilityManager.Application.Authorization.RoleLevels.Administrator)));
 });
 
 // Custom authorization handler
 builder.Services.AddScoped<IAuthorizationHandler, ActiveUserRequirementHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, CWA.FacilityManager.Application.Authorization.RoleLevelHandler>();
 
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
