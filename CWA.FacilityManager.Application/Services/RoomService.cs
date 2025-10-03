@@ -48,6 +48,35 @@ namespace CWA.FacilityManager.Application.Services
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Room>> GetAvailableRoomsAsync(DateTime startDate, DateTime endDate, int? capacity = null)
+        {
+            var query = _context.Rooms
+                .AsNoTracking()
+                .Include(r => r.Building)
+                .Include(r => r.Events)
+                .Where(r => r.IsActive && r.IsAvailable);
+
+            // Filter by capacity if specified
+            if (capacity.HasValue)
+            {
+                query = query.Where(r => r.Capacity >= capacity.Value);
+            }
+
+            var rooms = await query.OrderBy(r => r.Building.Name).ThenBy(r => r.Name).ToListAsync();
+
+            // Filter rooms that have no conflicting events in the specified time range
+            var availableRooms = rooms.Where(r => 
+                !r.Events.Any(e => 
+                    e.Status != Domain.Models.EventStatus.Rejected && 
+                    e.Status != Domain.Models.EventStatus.Cancelled &&
+                    e.StartDateTime < endDate && 
+                    e.EndDateTime > startDate
+                )
+            ).ToList();
+
+            return availableRooms;
+        }
+
         public async Task<Room> CreateRoomAsync(Room room)
         {
             room.CreatedAt = DateTime.UtcNow;
