@@ -38,6 +38,7 @@ namespace CWA.FacilityManager.Domain.Models
         public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public virtual ICollection<UserHistory> UserHistories { get; set; } = new List<UserHistory>();
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+        public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 
         // Computed properties with proper null handling
         public string FullName 

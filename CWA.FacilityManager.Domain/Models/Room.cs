@@ -27,6 +27,12 @@ namespace CWA.FacilityManager.Domain.Models
         [StringLength(1000)]
         public string? Equipment { get; set; }
 
+        /// <summary>
+        /// JSON or comma-separated list of amenities (projector, microphone, whiteboard, etc.)
+        /// </summary>
+        [StringLength(1000)]
+        public string? Amenities { get; set; }
+
         [Required(ErrorMessage = "Activity type is required")]
         public ActivityType Activity { get; set; } = ActivityType.Course;
 
