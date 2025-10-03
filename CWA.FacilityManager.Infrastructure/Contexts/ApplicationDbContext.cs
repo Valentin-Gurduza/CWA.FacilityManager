@@ -25,6 +25,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
         public DbSet<Event> Events { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -102,6 +103,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.Location).HasMaxLength(200);
                 entity.Property(e => e.Equipment).HasMaxLength(1000);
+                entity.Property(e => e.Amenities).HasMaxLength(1000);
                 entity.Property(e => e.ImageUrl).HasMaxLength(500);
                 entity.Property(e => e.Activity).HasConversion<int>();
                 entity.Property(r => r.HourlyRate).HasPrecision(18, 2);
@@ -199,13 +201,25 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Description).HasMaxLength(1000);
                 entity.Property(e => e.Organizer).HasMaxLength(100);
+                entity.Property(e => e.OrganizerCompany).HasMaxLength(200);
+                entity.Property(e => e.ContactName).HasMaxLength(100);
+                entity.Property(e => e.ContactPhone).HasMaxLength(20);
                 entity.Property(e => e.ContactEmail).HasMaxLength(200);
                 entity.Property(e => e.Type).HasConversion<string>();
+                entity.Property(e => e.Status).HasConversion<int>();
 
                 entity.HasOne(e => e.CreatedBy)
                     .WithMany()
                     .HasForeignKey(e => e.CreatedById)
                     .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.ApprovedBy)
+                    .WithMany()
+                    .HasForeignKey(e => e.ApprovedById)
+                    .OnDelete(DeleteBehavior.SetNull);
+                
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => new { e.RoomId, e.StartDateTime, e.EndDateTime });
             });
 
             // Configure CalendarTask entity
@@ -242,6 +256,29 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.AssignedUserId);
                 entity.HasIndex(e => e.Category);
+            });
+
+            // Configure AuditLog entity
+            builder.Entity<AuditLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+                entity.Property(e => e.ActionType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Entity).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.EntityId).HasMaxLength(100);
+                entity.Property(e => e.Data).HasMaxLength(4000);
+                entity.Property(e => e.IpAddress).HasMaxLength(50);
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.AuditLogs)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Timestamp);
+                entity.HasIndex(e => new { e.Entity, e.EntityId });
+                entity.HasIndex(e => e.ActionType);
             });
 
             // Seed data
@@ -456,7 +493,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                     Name = "Secretary",
                     NormalizedName = "SECRETARY",
                     Description = "Secretary with access to manage bookings, view reports, and manage facilities",
-                    Priority = 80,
+                    Priority = 50,
                     IsSystemRole = true,
                     IsActive = true,
                     RoleType = Domain.Enums.RoleType.Secretary,
@@ -468,7 +505,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                     Name = "Renter",
                     NormalizedName = "RENTER",
                     Description = "Renter with access to view facilities and create booking requests",
-                    Priority = 60,
+                    Priority = 10,
                     IsSystemRole = true,
                     IsActive = true,
                     RoleType = Domain.Enums.RoleType.Renter,
