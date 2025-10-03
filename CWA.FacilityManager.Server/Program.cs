@@ -206,6 +206,7 @@ builder.Services.AddScoped<UserManagementRoleInitService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IBuildingService, BuildingService>();
 builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // Calendar management
 builder.Services.AddScoped<ICalendarTaskService, CalendarTaskService>();
