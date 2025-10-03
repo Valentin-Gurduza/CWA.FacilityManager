@@ -249,6 +249,11 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         await SeedData.Initialize(context);
 
+        // Seed default administrator user
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
+        await SeedData.SeedDefaultAdminUser(userManager, roleManager, logger);
+
         // System permissions & role-permission assignments (from Merge-Test)
         var permissionService = services.GetRequiredService<IPermissionService>();
         await permissionService.InitializeSystemPermissionsAsync();

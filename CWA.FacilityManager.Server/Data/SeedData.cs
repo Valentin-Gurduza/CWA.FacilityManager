@@ -1,12 +1,19 @@
 using CWA.FacilityManager.Infrastructure.Contexts;
 using CWA.FacilityManager.Domain.Models;
 using CWA.FacilityManager.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace CWA.FacilityManager.Server.Data
 {
     public static class SeedData
     {
+        // Default administrator credentials
+        public const string DefaultAdminEmail = "admin@facilitymanager.local";
+        public const string DefaultAdminPassword = "Admin@123";
+        public const string DefaultAdminUsername = "admin";
+
         public static async Task Initialize(ApplicationDbContext context)
         {
             // Ensure the database is created
@@ -76,6 +83,67 @@ namespace CWA.FacilityManager.Server.Data
 
             context.Rooms.AddRange(rooms);
             await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Seeds the default administrator user if no users exist
+        /// </summary>
+        public static async Task SeedDefaultAdminUser(
+            UserManager<ApplicationUser> userManager, 
+            RoleManager<ApplicationRole> roleManager,
+            ILogger logger)
+        {
+            try
+            {
+                // Check if any users exist
+                if (await userManager.Users.AnyAsync())
+                {
+                    logger.LogInformation("Users already exist. Skipping default admin user creation.");
+                    return;
+                }
+
+                // Ensure Administrator role exists
+                var adminRole = await roleManager.FindByNameAsync("Administrator");
+                if (adminRole == null)
+                {
+                    logger.LogWarning("Administrator role not found. Cannot create default admin user.");
+                    return;
+                }
+
+                // Create default admin user
+                var adminUser = new ApplicationUser
+                {
+                    UserName = DefaultAdminUsername,
+                    Email = DefaultAdminEmail,
+                    EmailConfirmed = true,
+                    FirstName = "System",
+                    LastName = "Administrator",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    PhoneNumberConfirmed = true
+                };
+
+                var result = await userManager.CreateAsync(adminUser, DefaultAdminPassword);
+                
+                if (result.Succeeded)
+                {
+                    // Assign Administrator role
+                    await userManager.AddToRoleAsync(adminUser, "Administrator");
+                    
+                    logger.LogInformation("Default administrator user created successfully.");
+                    logger.LogInformation("Email: {Email}, Password: {Password}", DefaultAdminEmail, DefaultAdminPassword);
+                    logger.LogWarning("IMPORTANT: Change the default administrator password after first login!");
+                }
+                else
+                {
+                    logger.LogError("Failed to create default admin user: {Errors}", 
+                        string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error creating default administrator user");
+            }
         }
     }
 }

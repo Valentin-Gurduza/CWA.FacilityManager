@@ -153,7 +153,24 @@ CWA.FacilityManager/
 
 7. **Access the application**
    - Open browser to `https://localhost:5001` (or the port shown in console)
-   - Default administrator credentials will be seeded during first run
+   - Default administrator credentials:
+     - **Email**: `admin@facilitymanager.local`
+     - **Password**: `Admin@123`
+   - **IMPORTANT**: Change the default password after first login!
+
+## Default Credentials
+
+The system automatically creates a default administrator account on first run:
+
+- **Email**: admin@facilitymanager.local
+- **Username**: admin
+- **Password**: Admin@123
+
+**Security Note**: This default account is created for initial setup only. You should:
+1. Log in immediately after first deployment
+2. Change the administrator password
+3. Create additional administrator accounts if needed
+4. Consider deactivating the default admin account after creating replacement administrators
 
 ## Database Migrations
 
