@@ -20,6 +20,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+// Explicitly alias the RoleInitializationService to resolve ambiguity
+using UserManagementRoleInitService = CWA.FacilityManager.Application.Services.UserManagement.RoleInitializationService;
 
 // If you re-enable a custom DateTime converter, ensure the using below (was from CalendarManagement branch)
 // using CWA.FacilityManager.Shared.Converters;
@@ -125,7 +127,7 @@ builder.Services.AddAutoMapper(typeof(CWA.FacilityManager.Application.Mappings.U
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IRoleManagementService, RoleManagementService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
-builder.Services.AddScoped<RoleInitializationService>();
+builder.Services.AddScoped<UserManagementRoleInitService>();
 
 // Room / Facility / Event Services
 builder.Services.AddScoped<IRoomService, RoomService>();
@@ -177,7 +179,7 @@ using (var scope = app.Services.CreateScope())
         var permissionService = services.GetRequiredService<IPermissionService>();
         await permissionService.InitializeSystemPermissionsAsync();
 
-        var roleInitService = services.GetRequiredService<RoleInitializationService>();
+        var roleInitService = services.GetRequiredService<UserManagementRoleInitService>();
         await roleInitService.InitializeDefaultRolePermissionsAsync();
 
         logger.LogInformation("Application initialization completed successfully.");
@@ -213,7 +215,7 @@ else
 
 app.UseHttpsRedirection();
 
-app.UseStaticAssets();
+app.UseStaticFiles();
 
 // Authentication / Authorization
 app.UseAuthentication();
@@ -225,6 +227,9 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(CWA.FacilityManager.Client._Imports).Assembly);
+
+// Map static assets for WebAssembly
+app.MapStaticAssets();
 
 // Identity endpoints
 app.MapAdditionalIdentityEndpoints();

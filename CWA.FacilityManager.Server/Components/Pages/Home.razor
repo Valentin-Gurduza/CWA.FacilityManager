@@ -115,7 +115,7 @@
             <!-- Role-based Quick Access -->
             <div class="row mb-4">
                 <!-- Admin/Secretary Section -->
-                <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="adminContext">
                     <Authorized>
                         <div class="col-md-6 mb-3">
                             <div class="card border-warning">
@@ -142,7 +142,7 @@
                 </AuthorizeView>
 
                 <!-- Renter Section -->
-                <AuthorizeView Roles="Renter" Policy="ActiveUser">
+                <AuthorizeView Roles="Renter" Policy="ActiveUser" Context="renterContext">
                     <Authorized>
                         <div class="col-md-6 mb-3">
                             <div class="card border-secondary">

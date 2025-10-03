@@ -23,7 +23,7 @@
                         <h1 class="h2">
                             <i class="fas fa-door-open me-2"></i>Rooms Management
                         </h1>
-                        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="headerAdminContext">
                             <Authorized>
                                 <div class="btn-group">
                                     <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
@@ -100,7 +100,7 @@
             }
 
             <!-- User Profile Integration Notice (from User-profile-history branch) -->
-            <AuthorizeView Roles="Renter" Policy="ActiveUser">
+            <AuthorizeView Roles="Renter" Policy="ActiveUser" Context="renterNoticeContext">
                 <Authorized>
                     <div class="row mb-4">
                         <div class="col-12">
@@ -142,12 +142,12 @@
                             <h4>No Rooms Available</h4>
                             <p>
                                 @* Show different messages based on user role *@
-                                <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                                <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="noRoomsAdminContext">
                                     <Authorized>Start by adding your first room to the system!</Authorized>
                                     <NotAuthorized>No rooms are currently available for booking. Please contact an administrator.</NotAuthorized>
                                 </AuthorizeView>
                             </p>
-                            <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                            <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="addFirstRoomContext">
                                 <Authorized>
                                     <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
                                         <i class="fas fa-plus me-2"></i> Add Your First Room
@@ -167,7 +167,7 @@
                                     <h5 class="card-title mb-0 text-primary">
                                         @room.Name
                                     </h5>
-                                    <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+                                    <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="roomCardAdminContext">
                                         <Authorized>
                                             <div class="dropdown">
                                                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -225,7 +225,7 @@
                                 </div>
                                 <div class="card-footer bg-transparent">
                                     <div class="d-grid gap-2">
-                                        <AuthorizeView Roles="Renter,Administrator,Secretary" Policy="ActiveUser">
+                                        <AuthorizeView Roles="Renter,Administrator,Secretary" Policy="ActiveUser" Context="bookButtonContext">
                                             <Authorized>
                                                 <button class="btn btn-outline-primary btn-sm" @onclick="() => BookRoom(room)" type="button">
                                                     <i class="fas fa-calendar-plus me-1"></i> Book Room
@@ -275,7 +275,7 @@
         </div>
 
         <!-- Add/Edit Room Modal (Admin/Secretary only) -->
-        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary">
+        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="modalAdminContext">
             <Authorized>
                 @if (showRoomModal)
                 {
