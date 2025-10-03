@@ -252,9 +252,35 @@ dotnet test
 dotnet test CWA.FacilityManager.Tests
 ```
 
-### Run tests with coverage
+### Run tests with verbose output
 ```bash
-dotnet test /p:CollectCoverage=true
+dotnet test --logger "console;verbosity=detailed"
+```
+
+### Test Coverage
+
+The test suite includes:
+
+#### Authorization Tests
+- Role-based authorization policies
+- Level-based hierarchy enforcement
+- Policy requirement validation
+
+#### Service Tests
+- Event conflict detection
+- Room availability checking
+- Pending event filtering
+- Status-based filtering
+
+**Note**: Some authorization tests may require additional setup for mock UserManager/RoleManager. The business logic tests (EventService) demonstrate core functionality validation.
+
+### Test Structure
+```
+CWA.FacilityManager.Tests/
+├── AuthorizationTests/
+│   └── RoleLevelHandlerTests.cs      # Role hierarchy tests
+└── ServicesTests/
+    └── EventServiceTests.cs           # Event/room conflict tests
 ```
 
 ## Seeded Data
