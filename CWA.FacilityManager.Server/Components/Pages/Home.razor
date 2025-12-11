@@ -2,303 +2,283 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 
-<PageTitle>Facility Manager - Dashboard</PageTitle>
+<PageTitle>Home - CWA Facility Manager</PageTitle>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <h1 class="mb-4"><i class="fas fa-home"></i> Welcome to CWA Facility Manager</h1>
-        </div>
-    </div>
-
-    <AuthorizeView>
-        <Authorized>
-            <!-- User Welcome Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="alert alert-success">
-                        <h5><i class="fas fa-user-check"></i> Welcome back, <strong>@context.User.Identity?.Name</strong>!</h5>
-                        <p class="mb-0">You are logged in and ready to manage facilities efficiently.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Email Confirmation Check -->
-            <AuthorizeView Policy="EmailConfirmed" Context="emailContext">
+<div class="hero-section">
+    <div class="hero-content fade-in">
+        <div class="hero-text">
+            <h1 class="hero-title text-gradient">
+                <span class="bi bi-building-fill me-3"></span>
+                CWA Facility Manager
+            </h1>
+            <p class="hero-subtitle">
+                Modern facility management platform designed for efficiency, security, and seamless user experience.
+            </p>
+            <AuthorizeView>
                 <Authorized>
-                    <EmailConfirmedContent />
+                    <div class="welcome-message glass-effect mt-4 p-3">
+                        <span class="bi bi-person-check-fill me-2"></span>
+                        Welcome back, <strong>@context.User.Identity?.Name</strong>!
+                    </div>
                 </Authorized>
                 <NotAuthorized>
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="alert alert-warning">
-                                <h5><i class="fas fa-exclamation-triangle"></i> Email Confirmation Required</h5>
-                                <p>Some features are restricted until you <a href="Account/Manage/Email" class="alert-link">confirm your email address</a>.</p>
-                                <p class="mb-0">Check your email for a confirmation link, or <a href="Account/ResendEmailConfirmation" class="alert-link">request a new one</a>.</p>
-                            </div>
-                        </div>
+                    <div class="hero-actions mt-4">
+                        <a href="/Account/Login" class="btn btn-primary btn-lg me-3 hover-lift">
+                            <span class="bi bi-box-arrow-in-right me-2"></span>
+                            Sign In
+                        </a>
+                        <a href="/Account/Register" class="btn btn-outline-primary btn-lg hover-lift">
+                            <span class="bi bi-person-plus me-2"></span>
+                            Register
+                        </a>
                     </div>
                 </NotAuthorized>
             </AuthorizeView>
-
-            <div class="row">
-                <!-- Profile Summary Card -->
-                <div class="col-lg-6 col-xl-4 mb-4">
-                    <div class="card border-primary h-100">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-circle"></i> My Profile</h5>
+        </div>
+        <div class="hero-visual">
+            <div class="floating-card glass-effect">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <span class="bi bi-building-fill"></span>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <p class="card-text">
-                                View and manage your profile information, including personal details, 
-                                department, and contact information.
-                            </p>
-                            <div class="d-grid gap-2 mt-auto">
-                                <a href="/profile" class="btn btn-primary">
-                                    <i class="fas fa-user-edit"></i> View Profile
-                                </a>
-                            </div>
+                        <div class="stat-info">
+                            <h3>5</h3>
+                            <p>Facilities</p>
                         </div>
                     </div>
-                </div>
-
-                <!-- History & Activity Card -->
-                <div class="col-lg-6 col-xl-4 mb-4">
-                    <div class="card border-info h-100">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0"><i class="fas fa-history"></i> My History</h5>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <span class="bi bi-door-open-fill"></span>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <p class="card-text">
-                                Track your booking history and account activity. View past reservations 
-                                and monitor your account changes.
-                            </p>
-                            <div class="d-grid gap-2 mt-auto">
-                                <a href="/history" class="btn btn-info">
-                                    <i class="fas fa-list"></i> View History
-                                </a>
-                            </div>
+                        <div class="stat-info">
+                            <h3>25</h3>
+                            <p>Rooms</p>
                         </div>
                     </div>
-                </div>
-
-                <!-- Quick Actions Card -->
-                <div class="col-lg-12 col-xl-4 mb-4">
-                    <div class="card border-success h-100">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <span class="bi bi-calendar-check-fill"></span>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <p class="card-text">Common actions you can perform:</p>
-                            <div class="d-grid gap-2 mt-auto">
-                                <a href="/rooms" class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-building"></i> Browse Rooms
-                                </a>
-                                <a href="/events" class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-calendar-event"></i> View Events
-                                </a>
-                                <a href="/bookings" class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-calendar-plus"></i> My Bookings
-                                </a>
-                                <a href="/calendar" class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-calendar"></i> Task Calendar
-                                </a>
-                                <a href="/Account/Manage" class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-cog"></i> Account Settings
-                                </a>
-                            </div>
+                        <div class="stat-info">
+                            <h3>150</h3>
+                            <p>Bookings</p>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <span class="bi bi-people-fill"></span>
+                        </div>
+                        <div class="stat-info">
+                            <h3>320</h3>
+                            <p>Users</p>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Role-based Quick Access -->
-            <div class="row mb-4">
-                <!-- Admin/Secretary Section -->
-                <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="adminContext">
-                    <Authorized>
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-warning">
-                                <div class="card-header bg-warning text-dark">
-                                    <h5 class="mb-0"><i class="fas fa-tools"></i> Administration</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p class="card-text">Access administrative tools and management features.</p>
-                                    <div class="d-grid gap-2">
-                                        <a href="/admin/users" class="btn btn-outline-warning btn-sm">
-                                            <i class="fas fa-users"></i> User Management
-                                        </a>
-                                        <a href="/admin/facilities" class="btn btn-outline-warning btn-sm">
-                                            <i class="fas fa-building"></i> Facility Management
-                                        </a>
-                                        <a href="/admin/reports" class="btn btn-outline-warning btn-sm">
-                                            <i class="fas fa-chart-bar"></i> Reports & Analytics
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Authorized>
-                </AuthorizeView>
-
-                <!-- Renter Section -->
-                <AuthorizeView Roles="Renter" Policy="ActiveUser" Context="renterContext">
-                    <Authorized>
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-secondary">
-                                <div class="card-header bg-secondary text-white">
-                                    <h5 class="mb-0"><i class="fas fa-handshake"></i> Renter Tools</h5>
-                                </div>
-                                <div class="card-body">
-                                    <p class="card-text">Quick access to rental and booking features.</p>
-                                    <div class="d-grid gap-2">
-                                        <a href="/facilities" class="btn btn-outline-secondary btn-sm">
-                                            <i class="fas fa-search"></i> Browse Facilities
-                                        </a>
-                                        <a href="/bookings/my" class="btn btn-outline-secondary btn-sm">
-                                            <i class="fas fa-calendar-check"></i> My Bookings
-                                        </a>
-                                        <a href="/events/my" class="btn btn-outline-secondary btn-sm">
-                                            <i class="fas fa-calendar-event"></i> My Events
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Authorized>
-                </AuthorizeView>
-            </div>
-
-            <!-- Features Overview -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0"><i class="fas fa-star"></i> Platform Features</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3 mb-3">
-                                    <div class="feature-item">
-                                        <div class="feature-icon text-primary">
-                                            <i class="fas fa-user-circle fa-3x"></i>
-                                        </div>
-                                        <h6 class="mt-2">Enhanced User Profiles</h6>
-                                        <p class="small text-muted">
-                                            Complete profile management with role-based access, 
-                                            department tracking, and personal information.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <div class="feature-item">
-                                        <div class="feature-icon text-info">
-                                            <i class="fas fa-history fa-3x"></i>
-                                        </div>
-                                        <h6 class="mt-2">Activity Tracking</h6>
-                                        <p class="small text-muted">
-                                            Comprehensive history tracking including booking history, 
-                                            login activities, and profile changes.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <div class="feature-item">
-                                        <div class="feature-icon text-success">
-                                            <i class="fas fa-shield-alt fa-3x"></i>
-                                        </div>
-                                        <h6 class="mt-2">Role-Based Access</h6>
-                                        <p class="small text-muted">
-                                            Three-tier role system: Administrator, Secretary, and Renter 
-                                            with appropriate permissions for each role.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <div class="feature-item">
-                                        <div class="feature-icon text-warning">
-                                            <i class="fas fa-calendar-alt fa-3x"></i>
-                                        </div>
-                                        <h6 class="mt-2">Event Management</h6>
-                                        <p class="small text-muted">
-                                            Integrated event scheduling, task calendar, and facility 
-                                            booking with comprehensive management tools.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </Authorized>
-        <NotAuthorized>
-            <div class="text-center py-5">
-                <i class="fas fa-lock fa-3x text-muted mb-3"></i>
-                <h3>Welcome to CWA Facility Manager</h3>
-                <p class="lead">Please sign in to access your dashboard and manage facility bookings.</p>
-                <p>This platform helps you manage facilities, users, and administrative tasks efficiently.</p>
-                <div class="mt-4">
-                    <a href="/Account/Login" class="btn btn-primary btn-lg me-3">
-                        <i class="fas fa-sign-in-alt"></i> Sign In
-                    </a>
-                    <a href="/Account/Register" class="btn btn-outline-secondary btn-lg">
-                        <i class="fas fa-user-plus"></i> Register
-                    </a>
-                </div>
-            </div>
-        </NotAuthorized>
-    </AuthorizeView>
+        </div>
+    </div>
 </div>
 
-<style>
-    .feature-item {
-        text-align: center;
-        padding: 20px;
-        border-radius: 8px;
-        background: #f8f9fa;
-        height: 100%;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .feature-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .feature-icon {
-        margin-bottom: 15px;
-    }
-    
-    .card {
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border: none;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .card-header {
-        font-weight: 600;
-    }
-    
-    .h-100 {
-        height: 100% !important;
-    }
-    
-    .alert {
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .btn {
-        transition: all 0.2s ease;
-    }
-    
-    .btn:hover {
-        transform: translateY(-1px);
-    }
-</style>
+<AuthorizeView>
+    <Authorized>
+        <!-- Email Confirmation Check -->
+        <AuthorizeView Policy="EmailConfirmed" Context="emailContext">
+            <NotAuthorized>
+                <div class="container mb-4">
+                    <div class="alert alert-warning">
+                        <div class="d-flex align-items-center">
+                            <span class="bi bi-exclamation-triangle-fill me-3 fs-4"></span>
+                            <div>
+                                <h5 class="mb-1">Email Confirmation Required</h5>
+                                <p class="mb-0">
+                                    Some features are restricted until you 
+                                    <a href="Account/Manage/Email" class="alert-link">confirm your email address</a>.
+                                    <a href="Account/ResendEmailConfirmation" class="alert-link ms-2">Request a new confirmation link</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        <div class="quick-actions-section">
+            <div class="container">
+                <div class="section-header text-center mb-5">
+                    <h2 class="section-title">
+                        <span class="bi bi-lightning-charge-fill me-2"></span>
+                        Quick Actions
+                    </h2>
+                    <p class="section-subtitle">
+                        Get started with these frequently used features
+                    </p>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="/profile" class="quick-action-card glass-effect hover-lift">
+                            <div class="action-icon">
+                                <span class="bi bi-person-circle"></span>
+                            </div>
+                            <h4>My Profile</h4>
+                            <p>View and update your information</p>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6">
+                        <a href="/rooms" class="quick-action-card glass-effect hover-lift">
+                            <div class="action-icon">
+                                <span class="bi bi-door-open-fill"></span>
+                            </div>
+                            <h4>Browse Rooms</h4>
+                            <p>Find and reserve meeting spaces</p>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6">
+                        <a href="/bookings" class="quick-action-card glass-effect hover-lift">
+                            <div class="action-icon">
+                                <span class="bi bi-calendar-check-fill"></span>
+                            </div>
+                            <h4>My Bookings</h4>
+                            <p>Manage your reservations</p>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6">
+                        <a href="/calendar" class="quick-action-card glass-effect hover-lift">
+                            <div class="action-icon">
+                                <span class="bi bi-calendar-week-fill"></span>
+                            </div>
+                            <h4>Task Calendar</h4>
+                            <p>View your schedule and tasks</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Role-based Administration Section -->
+        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="adminContext">
+            <Authorized>
+                <div class="admin-section">
+                    <div class="container">
+                        <div class="section-header text-center mb-5">
+                            <h2 class="section-title">
+                                <span class="bi bi-gear-fill me-2"></span>
+                                Administration
+                            </h2>
+                            <p class="section-subtitle">
+                                Manage platform settings and administrative tasks
+                            </p>
+                        </div>
+                        
+                        <div class="row g-4">
+                            <div class="col-lg-4 col-md-6">
+                                <a href="/admin/users" class="admin-action-card glass-effect hover-lift">
+                                    <div class="action-icon admin-icon">
+                                        <span class="bi bi-people-fill"></span>
+                                    </div>
+                                    <h4>User Management</h4>
+                                    <p>Manage user accounts and profiles</p>
+                                </a>
+                            </div>
+                            
+                            <div class="col-lg-4 col-md-6">
+                                <a href="/admin/facilities" class="admin-action-card glass-effect hover-lift">
+                                    <div class="action-icon admin-icon">
+                                        <span class="bi bi-building-fill"></span>
+                                    </div>
+                                    <h4>Facility Management</h4>
+                                    <p>Configure facilities and rooms</p>
+                                </a>
+                            </div>
+                            
+                            <AuthorizeView Roles="Administrator" Policy="ActiveAdmin" Context="roleContext">
+                                <Authorized>
+                                    <div class="col-lg-4 col-md-6">
+                                        <a href="/admin/roles" class="admin-action-card glass-effect hover-lift">
+                                            <div class="action-icon admin-icon">
+                                                <span class="bi bi-shield-check"></span>
+                                            </div>
+                                            <h4>Role Management</h4>
+                                            <p>Configure user roles and permissions</p>
+                                        </a>
+                                    </div>
+                                </Authorized>
+                            </AuthorizeView>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        <div class="features-section">
+            <div class="container">
+                <div class="section-header text-center mb-5">
+                    <h2 class="section-title">
+                        <span class="bi bi-star-fill me-2"></span>
+                        Platform Features
+                    </h2>
+                    <p class="section-subtitle">
+                        Comprehensive facility management tools for modern organizations
+                    </p>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card hover-lift slide-in">
+                            <div class="feature-icon">
+                                <span class="bi bi-person-circle"></span>
+                            </div>
+                            <h3 class="feature-title">Enhanced Profiles</h3>
+                            <p class="feature-description">
+                                Complete profile management with role-based access and department tracking.
+                            </p>
+                            <ul class="feature-list">
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Personal information</li>
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Department tracking</li>
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Role-based access</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card hover-lift slide-in">
+                            <div class="feature-icon">
+                                <span class="bi bi-calendar-week-fill"></span>
+                            </div>
+                            <h3 class="feature-title">Smart Scheduling</h3>
+                            <p class="feature-description">
+                                Intelligent booking system with conflict detection and calendar integration.
+                            </p>
+                            <ul class="feature-list">
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Real-time availability</li>
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Conflict prevention</li>
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Calendar sync</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4 col-md-6">
+                        <div class="feature-card hover-lift slide-in">
+                            <div class="feature-icon">
+                                <span class="bi bi-shield-check-fill"></span>
+                            </div>
+                            <h3 class="feature-title">Security & Access</h3>
+                            <p class="feature-description">
+                                Three-tier role system with comprehensive audit trails and secure authentication.
+                            </p>
+                            <ul class="feature-list">
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Role management</li>
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Activity tracking</li>
+                                <li><span class="bi bi-check-circle-fill me-2"></span>Secure access</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>

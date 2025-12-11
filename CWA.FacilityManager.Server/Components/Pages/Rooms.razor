@@ -8,8 +8,10 @@
 @attribute [Authorize]
 @inject IRoomService RoomService
 @inject IBuildingService BuildingService
+@inject IBookingService BookingService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Rooms Management</PageTitle>
 
@@ -227,7 +229,7 @@
                                     <div class="d-grid gap-2">
                                         <AuthorizeView Roles="Renter,Administrator,Secretary" Policy="ActiveUser" Context="bookButtonContext">
                                             <Authorized>
-                                                <button class="btn btn-outline-primary btn-sm" @onclick="() => BookRoom(room)" type="button">
+                                                <button class="btn btn-outline-primary btn-sm" @onclick="() => ShowBookingModal(room)" type="button">
                                                     <i class="fas fa-calendar-plus me-1"></i> Book Room
                                                 </button>
                                             </Authorized>
@@ -424,6 +426,150 @@
                 }
             </Authorized>
         </AuthorizeView>
+
+        <!-- Booking Modal -->
+        @if (showBookingModal)
+        {
+            <!-- Modal Backdrop -->
+            <div class="modal-backdrop fade show" @onclick="CloseBookingModal"></div>
+            
+            <!-- Modal Dialog -->
+            <div class="modal fade show d-block booking-modal" tabindex="-1" style="z-index: 1060;">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content" @onclick:stopPropagation="true">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-calendar-plus me-2"></i>
+                                Book Room: @selectedRoom?.Name
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" @onclick="CloseBookingModal" aria-label="Close"></button>
+                        </div>
+                        
+                        <EditForm Model="bookingModel" OnValidSubmit="CreateBooking" Context="bookingContext">
+                            <DataAnnotationsValidator />
+                            <div class="modal-body">
+                                <ValidationSummary class="text-danger mb-3" />
+                                
+                                <!-- Room Information -->
+                                <div class="alert alert-info mb-3">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Room Details</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Room:</strong> @selectedRoom?.Name</p>
+                                            <p class="mb-1"><strong>Building:</strong> @selectedRoom?.Building?.Name</p>
+                                            <p class="mb-0"><strong>Capacity:</strong> @selectedRoom?.Capacity people</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Activity:</strong> @selectedRoom?.Activity</p>
+                                            @if (!string.IsNullOrEmpty(selectedRoom?.RoomNumber))
+                                            {
+                                                <p class="mb-0"><strong>Room Number:</strong> @selectedRoom.RoomNumber</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Booking Title -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-tag me-1"></i>Booking Title <span class="text-danger">*</span>
+                                    </label>
+                                    <InputText class="form-control" @bind-Value="bookingModel.Title" 
+                                               placeholder="Enter a title for your booking" />
+                                    <ValidationMessage For="() => bookingModel.Title" class="text-danger" />
+                                </div>
+
+                                <!-- Description -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-align-left me-1"></i>Description
+                                    </label>
+                                    <InputTextArea class="form-control" rows="3" @bind-Value="bookingModel.Description" 
+                                                   placeholder="Describe the purpose or agenda of your booking" />
+                                </div>
+
+                                <!-- Date and Time -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-calendar me-1"></i>Start Date <span class="text-danger">*</span>
+                                            </label>
+                                            <InputDate class="form-control" @bind-Value="startDate" />
+                                            <ValidationMessage For="() => bookingModel.StartDate" class="text-danger" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-clock me-1"></i>Start Time <span class="text-danger">*</span>
+                                            </label>
+                                            <InputText class="form-control" @bind-Value="startTime" type="time" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-calendar me-1"></i>End Date <span class="text-danger">*</span>
+                                            </label>
+                                            <InputDate class="form-control" @bind-Value="endDate" />
+                                            <ValidationMessage For="() => bookingModel.EndDate" class="text-danger" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-clock me-1"></i>End Time <span class="text-danger">*</span>
+                                            </label>
+                                            <InputText class="form-control" @bind-Value="endTime" type="time" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Attendee Count -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-users me-1"></i>Expected Attendees
+                                    </label>
+                                    <InputNumber class="form-control" @bind-Value="bookingModel.AttendeeCount" 
+                                                 min="1" max="@selectedRoom?.Capacity" placeholder="Number of people attending" />
+                                    @if (selectedRoom != null)
+                                    {
+                                        <div class="form-text">Maximum capacity: @selectedRoom.Capacity people</div>
+                                    }
+                                </div>
+
+                                <!-- Special Requirements -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-clipboard-list me-1"></i>Special Requirements
+                                    </label>
+                                    <InputTextArea class="form-control" rows="2" @bind-Value="bookingModel.SpecialRequirements" 
+                                                   placeholder="Any special equipment, setup, or requirements..." />
+                                </div>
+                            </div>
+                            
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" @onclick="CloseBookingModal">
+                                    <i class="fas fa-times me-1"></i> Cancel
+                                </button>
+                                <button type="submit" class="btn btn-success" disabled="@isProcessing">
+                                    @if (isProcessing)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    }
+                                    <i class="fas fa-check me-1"></i>
+                                    Create Booking
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        }
     </Authorized>
     <NotAuthorized>
         <div class="container-fluid">
@@ -447,13 +593,22 @@
     private IEnumerable<Room>? rooms;
     private IEnumerable<Building>? buildings;
     private bool showRoomModal = false;
+    private bool showBookingModal = false;
     private bool isEditMode = false;
     private bool isProcessing = false;
     private Room roomModel = new Room();
+    private Booking bookingModel = new Booking();
+    private Room? selectedRoom;
     private string statusMessage = string.Empty;
     private string statusMessageType = "success";
     private string buildingName = string.Empty;
     private string timeInput = "09:00";
+    
+    // Booking form fields
+    private DateTime startDate = DateTime.Today.AddDays(1);
+    private DateTime endDate = DateTime.Today.AddDays(1);
+    private string startTime = "09:00";
+    private string endTime = "10:00";
 
     protected override async Task OnInitializedAsync()
     {
@@ -529,6 +684,143 @@
         isProcessing = false;
         isEditMode = false;
         StateHasChanged();
+    }
+
+    private async Task ShowBookingModal(Room room)
+    {
+        try
+        {
+            selectedRoom = room;
+            
+            // Get current user ID immediately when showing the modal
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                ShowStatusMessage("User not authenticated. Please log in again.", "error");
+                return;
+            }
+
+            bookingModel = new Booking
+            {
+                UserId = userId,  // Set user ID immediately
+                RoomId = room.Id,
+                Title = "",
+                Description = "",
+                AttendeeCount = 1,
+                SpecialRequirements = "",
+                Status = BookingStatus.Pending
+            };
+            
+            // Set default dates to tomorrow
+            startDate = DateTime.Today.AddDays(1);
+            endDate = DateTime.Today.AddDays(1);
+            startTime = "09:00";
+            endTime = "10:00";
+            
+            showBookingModal = true;
+            ClearStatusMessage();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error opening booking modal: {ex.Message}", "error");
+        }
+    }
+
+    private void CloseBookingModal()
+    {
+        showBookingModal = false;
+        selectedRoom = null;
+        bookingModel = new Booking();
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    private async Task CreateBooking()
+    {
+        if (selectedRoom == null)
+        {
+            ShowStatusMessage("Room not selected.", "error");
+            return;
+        }
+
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(bookingModel.Title))
+        {
+            ShowStatusMessage("Booking title is required.", "error");
+            return;
+        }
+
+        // Validate user is still authenticated
+        if (string.IsNullOrEmpty(bookingModel.UserId))
+        {
+            ShowStatusMessage("User authentication expired. Please refresh the page and try again.", "error");
+            return;
+        }
+
+        // Parse and validate times
+        if (!TimeSpan.TryParse(startTime, out var startTimeSpan) || !TimeSpan.TryParse(endTime, out var endTimeSpan))
+        {
+            ShowStatusMessage("Invalid time format.", "error");
+            return;
+        }
+
+        // Combine dates and times
+        var startDateTime = startDate.Date.Add(startTimeSpan);
+        var endDateTime = endDate.Date.Add(endTimeSpan);
+
+        // Validate booking times
+        if (startDateTime >= endDateTime)
+        {
+            ShowStatusMessage("End time must be after start time.", "error");
+            return;
+        }
+
+        if (startDateTime <= DateTime.Now)
+        {
+            ShowStatusMessage("Booking must be scheduled for the future.", "error");
+            return;
+        }
+
+        // Validate attendee count
+        if (bookingModel.AttendeeCount.HasValue && bookingModel.AttendeeCount > selectedRoom.Capacity)
+        {
+            ShowStatusMessage($"Attendee count cannot exceed room capacity of {selectedRoom.Capacity}.", "error");
+            return;
+        }
+
+        isProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            // Set final booking properties
+            bookingModel.RoomId = selectedRoom.Id;
+            bookingModel.StartDate = startDateTime;
+            bookingModel.EndDate = endDateTime;
+            bookingModel.Status = BookingStatus.Pending;
+
+            // Create the booking
+            var createdBooking = await BookingService.CreateBookingAsync(bookingModel);
+            
+            ShowStatusMessage($"Booking '{createdBooking.Title}' created successfully! You can view it in your bookings page.", "success");
+            CloseBookingModal();
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowStatusMessage($"Booking failed: {ex.Message}", "error");
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error creating booking: {ex.Message}", "error");
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
     }
 
     private async Task SaveRoom()
@@ -663,13 +955,6 @@
         }
     }
 
-    private void BookRoom(Room room)
-    {
-        // Navigate to booking page or show booking modal
-        // For now, just show a message
-        ShowStatusMessage($"Booking functionality for '{room.Name}' coming soon!", "success");
-    }
-
     private void ShowStatusMessage(string message, string type)
     {
         statusMessage = message;
@@ -767,4 +1052,36 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
+
+    /* Booking Modal Specific Styles */
+    .booking-modal .modal-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .booking-modal .alert-info {
+        border-left: 4px solid #17a2b8;
+        background-color: #f8f9fa;
+    }
+
+    .booking-modal .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+
+    .booking-modal .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+    }
+
+    .booking-modal .btn-success:hover {
+        background: linear-gradient(135deg, #218838, #1c9b84);
+        transform: translateY(-1px);
+    }
+
+    /* Status message animations */
+    .alert {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    
 </style>

@@ -3,6 +3,8 @@ using CWA.FacilityManager.Domain.Models;
 using CWA.FacilityManager.Infrastructure.Contexts;
 using CWA.FacilityManager.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 using DomainTaskStatus = CWA.FacilityManager.Domain.Models.TaskStatus;
 
 namespace CWA.FacilityManager.Application.Services
@@ -10,35 +12,81 @@ namespace CWA.FacilityManager.Application.Services
     public class CalendarTaskService : ICalendarTaskService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CalendarTaskService(ApplicationDbContext context)
+        public CalendarTaskService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private string? GetCurrentUserId()
+        {
+            return _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        }
+
+        private bool IsAdminOrSecretary()
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            return user != null && (user.IsInRole("Administrator") || user.IsInRole("Secretary"));
         }
 
         public async Task<IEnumerable<CalendarTaskDto>> GetAllTasksAsync()
         {
-            var tasks = await _context.CalendarTasks
-                .Include(t => t.AssignedUser)
-                .OrderBy(t => t.StartDate)
-                .ToListAsync();
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return new List<CalendarTaskDto>();
+            }
 
+            IQueryable<CalendarTask> query = _context.CalendarTasks.Include(t => t.AssignedUser);
+
+            // Only admin and secretary can see all tasks, regular users only see their own
+            if (!IsAdminOrSecretary())
+            {
+                query = query.Where(t => t.AssignedUserId == currentUserId);
+            }
+
+            var tasks = await query.OrderBy(t => t.StartDate).ToListAsync();
             return tasks.Select(MapToDto);
         }
 
         public async Task<IEnumerable<CalendarTaskDto>> GetTasksByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
-            var tasks = await _context.CalendarTasks
-                .Include(t => t.AssignedUser)
-                .Where(t => t.StartDate <= endDate && t.EndDate >= startDate)
-                .OrderBy(t => t.StartDate)
-                .ToListAsync();
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return new List<CalendarTaskDto>();
+            }
 
+            IQueryable<CalendarTask> query = _context.CalendarTasks
+                .Include(t => t.AssignedUser)
+                .Where(t => t.StartDate <= endDate && t.EndDate >= startDate);
+
+            // Only admin and secretary can see all tasks, regular users only see their own
+            if (!IsAdminOrSecretary())
+            {
+                query = query.Where(t => t.AssignedUserId == currentUserId);
+            }
+
+            var tasks = await query.OrderBy(t => t.StartDate).ToListAsync();
             return tasks.Select(MapToDto);
         }
 
         public async Task<IEnumerable<CalendarTaskDto>> GetTasksByUserAsync(string userId)
         {
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return new List<CalendarTaskDto>();
+            }
+
+            // Only admin/secretary can view other users' tasks, or users can view their own
+            if (!IsAdminOrSecretary() && userId != currentUserId)
+            {
+                return new List<CalendarTaskDto>();
+            }
+
             var tasks = await _context.CalendarTasks
                 .Include(t => t.AssignedUser)
                 .Where(t => t.AssignedUserId == userId)
@@ -50,15 +98,32 @@ namespace CWA.FacilityManager.Application.Services
 
         public async Task<CalendarTaskDto?> GetTaskByIdAsync(int id)
         {
-            var task = await _context.CalendarTasks
-                .Include(t => t.AssignedUser)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return null;
+            }
 
+            IQueryable<CalendarTask> query = _context.CalendarTasks.Include(t => t.AssignedUser);
+
+            // Only admin/secretary can see all tasks, regular users only see their own
+            if (!IsAdminOrSecretary())
+            {
+                query = query.Where(t => t.AssignedUserId == currentUserId);
+            }
+
+            var task = await query.FirstOrDefaultAsync(t => t.Id == id);
             return task != null ? MapToDto(task) : null;
         }
 
         public async Task<CalendarTaskDto> CreateTaskAsync(CreateCalendarTaskDto createTaskDto)
         {
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                throw new UnauthorizedAccessException("User not authenticated");
+            }
+
             // Normalize DateTime handling to prevent timezone issues
             var startDate = NormalizeDateTimeForStorage(createTaskDto.StartDate, createTaskDto.IsAllDay);
             var endDate = NormalizeDateTimeForStorage(createTaskDto.EndDate, createTaskDto.IsAllDay);
@@ -72,7 +137,10 @@ namespace CWA.FacilityManager.Application.Services
                 IsAllDay = createTaskDto.IsAllDay,
                 Priority = (TaskPriority)createTaskDto.Priority,
                 Color = createTaskDto.Color,
-                AssignedUserId = createTaskDto.AssignedUserId,
+                // If no assigned user is specified or user is not admin/secretary, assign to current user
+                AssignedUserId = (IsAdminOrSecretary() && !string.IsNullOrEmpty(createTaskDto.AssignedUserId)) 
+                    ? createTaskDto.AssignedUserId 
+                    : currentUserId,
                 FacilityId = createTaskDto.FacilityId,
                 Location = createTaskDto.Location,
                 IsRecurring = createTaskDto.IsRecurring,
@@ -94,9 +162,21 @@ namespace CWA.FacilityManager.Application.Services
 
         public async Task<CalendarTaskDto?> UpdateTaskAsync(int id, UpdateCalendarTaskDto updateTaskDto)
         {
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return null;
+            }
+
             var task = await _context.CalendarTasks.FindAsync(id);
             if (task == null)
                 return null;
+
+            // Only admin/secretary can edit any task, regular users can only edit their own
+            if (!IsAdminOrSecretary() && task.AssignedUserId != currentUserId)
+            {
+                return null;
+            }
 
             // Normalize DateTime handling to prevent timezone issues
             var startDate = NormalizeDateTimeForStorage(updateTaskDto.StartDate, updateTaskDto.IsAllDay);
@@ -110,7 +190,13 @@ namespace CWA.FacilityManager.Application.Services
             task.Priority = (TaskPriority)updateTaskDto.Priority;
             task.Status = (DomainTaskStatus)updateTaskDto.Status;
             task.Color = updateTaskDto.Color;
-            task.AssignedUserId = updateTaskDto.AssignedUserId;
+            
+            // Only admin/secretary can reassign tasks
+            if (IsAdminOrSecretary() && !string.IsNullOrEmpty(updateTaskDto.AssignedUserId))
+            {
+                task.AssignedUserId = updateTaskDto.AssignedUserId;
+            }
+            
             task.FacilityId = updateTaskDto.FacilityId;
             task.Location = updateTaskDto.Location;
             task.IsRecurring = updateTaskDto.IsRecurring;
@@ -128,9 +214,21 @@ namespace CWA.FacilityManager.Application.Services
 
         public async Task<bool> DeleteTaskAsync(int id)
         {
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return false;
+            }
+
             var task = await _context.CalendarTasks.FindAsync(id);
             if (task == null)
                 return false;
+
+            // Only admin/secretary can delete any task, regular users can only delete their own
+            if (!IsAdminOrSecretary() && task.AssignedUserId != currentUserId)
+            {
+                return false;
+            }
 
             _context.CalendarTasks.Remove(task);
             await _context.SaveChangesAsync();
@@ -139,31 +237,65 @@ namespace CWA.FacilityManager.Application.Services
 
         public async Task<IEnumerable<CalendarTaskDto>> GetTasksByCategoryAsync(TaskCategoryDto category)
         {
-            var tasks = await _context.CalendarTasks
-                .Include(t => t.AssignedUser)
-                .Where(t => t.Category == (TaskCategory)category)
-                .OrderBy(t => t.StartDate)
-                .ToListAsync();
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return new List<CalendarTaskDto>();
+            }
 
+            IQueryable<CalendarTask> query = _context.CalendarTasks
+                .Include(t => t.AssignedUser)
+                .Where(t => t.Category == (TaskCategory)category);
+
+            // Only admin and secretary can see all tasks, regular users only see their own
+            if (!IsAdminOrSecretary())
+            {
+                query = query.Where(t => t.AssignedUserId == currentUserId);
+            }
+
+            var tasks = await query.OrderBy(t => t.StartDate).ToListAsync();
             return tasks.Select(MapToDto);
         }
 
         public async Task<IEnumerable<CalendarTaskDto>> GetTasksByStatusAsync(TaskStatusDto status)
         {
-            var tasks = await _context.CalendarTasks
-                .Include(t => t.AssignedUser)
-                .Where(t => t.Status == (DomainTaskStatus)status)
-                .OrderBy(t => t.StartDate)
-                .ToListAsync();
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return new List<CalendarTaskDto>();
+            }
 
+            IQueryable<CalendarTask> query = _context.CalendarTasks
+                .Include(t => t.AssignedUser)
+                .Where(t => t.Status == (DomainTaskStatus)status);
+
+            // Only admin and secretary can see all tasks, regular users only see their own
+            if (!IsAdminOrSecretary())
+            {
+                query = query.Where(t => t.AssignedUserId == currentUserId);
+            }
+
+            var tasks = await query.OrderBy(t => t.StartDate).ToListAsync();
             return tasks.Select(MapToDto);
         }
 
         public async Task<bool> UpdateTaskStatusAsync(int id, TaskStatusDto status)
         {
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return false;
+            }
+
             var task = await _context.CalendarTasks.FindAsync(id);
             if (task == null)
                 return false;
+
+            // Only admin/secretary can update any task, regular users can only update their own
+            if (!IsAdminOrSecretary() && task.AssignedUserId != currentUserId)
+            {
+                return false;
+            }
 
             task.Status = (DomainTaskStatus)status;
             task.UpdatedAt = DateTime.UtcNow;
@@ -173,14 +305,25 @@ namespace CWA.FacilityManager.Application.Services
 
         public async Task<IEnumerable<CalendarTaskDto>> SearchTasksAsync(string searchTerm)
         {
-            var tasks = await _context.CalendarTasks
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return new List<CalendarTaskDto>();
+            }
+
+            IQueryable<CalendarTask> query = _context.CalendarTasks
                 .Include(t => t.AssignedUser)
                 .Where(t => t.Title.Contains(searchTerm) || 
                            (t.Description != null && t.Description.Contains(searchTerm)) ||
-                           (t.Tags != null && t.Tags.Contains(searchTerm)))
-                .OrderBy(t => t.StartDate)
-                .ToListAsync();
+                           (t.Tags != null && t.Tags.Contains(searchTerm)));
 
+            // Only admin and secretary can see all tasks, regular users only see their own
+            if (!IsAdminOrSecretary())
+            {
+                query = query.Where(t => t.AssignedUserId == currentUserId);
+            }
+
+            var tasks = await query.OrderBy(t => t.StartDate).ToListAsync();
             return tasks.Select(MapToDto);
         }
 

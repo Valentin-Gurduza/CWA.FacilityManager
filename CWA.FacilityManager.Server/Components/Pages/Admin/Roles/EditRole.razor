@@ -1,0 +1,365 @@
+@page "/admin/roles/{roleId}/edit"
+@using CWA.FacilityManager.Application.DTOs.UserManagement
+@using CWA.FacilityManager.Application.Interfaces.UserManagement
+@using CWA.FacilityManager.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+@inject IRoleManagementService RoleManagementService
+@inject IPermissionService PermissionService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@attribute [Authorize(Policy = "ActiveAdmin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Edit Role</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="/admin/roles" class="text-decoration-none">Role Management</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="/admin/roles/@RoleId" class="text-decoration-none">@(currentRole?.Name ?? "Role")</a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3">
+                        <i class="bi bi-pencil me-2"></i>Edit Role: @(currentRole?.Name ?? "Loading...")
+                    </h1>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary me-2" @onclick="Cancel">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Role
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (currentRole == null)
+            {
+                <div class="alert alert-danger">
+                    <h5>Role Not Found</h5>
+                    <p>The role you're trying to edit could not be found.</p>
+                    <a href="/admin/roles" class="btn btn-primary">Back to Roles</a>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>Role Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (currentRole.IsSystemRole)
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>System Role:</strong> Some properties of system roles cannot be modified.
+                                    </div>
+                                }
+                                
+                                <EditForm Model="updateRoleDto" OnValidSubmit="SubmitUpdateRole">
+                                    <DataAnnotationsValidator />
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <div class="form-floating">
+                                                <InputText @bind-Value="updateRoleDto.Name" id="roleName" class="form-control" placeholder="Role Name" disabled="@currentRole.IsSystemRole" />
+                                                <label for="roleName">Role Name *</label>
+                                                <ValidationMessage For="() => updateRoleDto.Name" class="text-danger" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-4">
+                                            <div class="form-floating">
+                                                <InputNumber @bind-Value="updateRoleDto.Priority" id="rolePriority" class="form-control" placeholder="Priority" />
+                                                <label for="rolePriority">Priority</label>
+                                                <ValidationMessage For="() => updateRoleDto.Priority" class="text-danger" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <div class="form-floating">
+                                                <InputTextArea @bind-Value="updateRoleDto.Description" id="roleDescription" class="form-control" placeholder="Description" style="height: 100px" />
+                                                <label for="roleDescription">Description</label>
+                                                <ValidationMessage For="() => updateRoleDto.Description" class="text-danger" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <InputCheckbox @bind-Value="updateRoleDto.IsActive" id="roleIsActive" class="form-check-input" disabled="@currentRole.IsSystemRole" />
+                                                <label class="form-check-label" for="roleIsActive">
+                                                    Role is Active
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        @if (!currentRole.IsSystemRole)
+                                        {
+                                            <div class="col-md-6">
+                                                <label class="form-label">Role Type</label>
+                                                <div class="form-check">
+                                                    <input type="radio" 
+                                                           name="roleType" 
+                                                           value="@((int)RoleType.Custom)" 
+                                                           checked="@(updateRoleDto.RoleType == RoleType.Custom)" 
+                                                           @onchange="() => updateRoleDto.RoleType = RoleType.Custom"
+                                                           id="roleTypeCustom" 
+                                                           class="form-check-input" />
+                                                    <label class="form-check-label" for="roleTypeCustom">
+                                                        Custom Role
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input type="radio" 
+                                                           name="roleType" 
+                                                           value="@((int)RoleType.Secretary)" 
+                                                           checked="@(updateRoleDto.RoleType == RoleType.Secretary)" 
+                                                           @onchange="() => updateRoleDto.RoleType = RoleType.Secretary"
+                                                           id="roleTypeSecretary" 
+                                                           class="form-check-input" />
+                                                    <label class="form-check-label" for="roleTypeSecretary">
+                                                        Secretary Role
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-end gap-2 mt-4">
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                            <i class="bi bi-x-circle me-1"></i>Cancel
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                            @if (isSubmitting)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-check-circle me-1"></i>
+                                            }
+                                            Update Role
+                                        </button>
+                                    </div>
+                                    
+                                    <ValidationSummary class="text-danger mt-3" />
+                                </EditForm>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>Role Details
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row">
+                                    <dt class="col-sm-5">Created:</dt>
+                                    <dd class="col-sm-7">@currentRole.CreatedAt.ToString("MMM dd, yyyy")</dd>
+                                    
+                                    @if (!string.IsNullOrEmpty(currentRole.CreatedBy))
+                                    {
+                                        <dt class="col-sm-5">Created By:</dt>
+                                        <dd class="col-sm-7">@currentRole.CreatedBy</dd>
+                                    }
+                                    
+                                    @if (currentRole.LastModifiedAt.HasValue)
+                                    {
+                                        <dt class="col-sm-5">Modified:</dt>
+                                        <dd class="col-sm-7">@currentRole.LastModifiedAt.Value.ToString("MMM dd, yyyy")</dd>
+                                    }
+                                    
+                                    <dt class="col-sm-5">Users:</dt>
+                                    <dd class="col-sm-7">@currentRole.UserCount</dd>
+                                    
+                                    <dt class="col-sm-5">Permissions:</dt>
+                                    <dd class="col-sm-7">@currentRole.Permissions.Count</dd>
+                                    
+                                    <dt class="col-sm-5">Type:</dt>
+                                    <dd class="col-sm-7">
+                                        @if (currentRole.IsSystemRole)
+                                        {
+                                            <span class="badge bg-info">System Role</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">@currentRole.RoleType</span>
+                                        }
+                                    </dd>
+                                    
+                                    <dt class="col-sm-5">Status:</dt>
+                                    <dd class="col-sm-7">
+                                        @if (currentRole.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">Inactive</span>
+                                        }
+                                    </dd>
+                                </dl>
+                                
+                                <hr />
+                                
+                                <div class="d-grid gap-2">
+                                    <a href="/admin/roles/@RoleId/permissions" class="btn btn-outline-primary">
+                                        <i class="bi bi-key me-1"></i>Manage Permissions
+                                    </a>
+                                    <a href="/admin/roles/@RoleId" class="btn btn-outline-info">
+                                        <i class="bi bi-eye me-1"></i>View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => successMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @successMessage
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @errorMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string RoleId { get; set; } = string.Empty;
+    
+    private RoleDto? currentRole;
+    private UpdateRoleDto updateRoleDto = new();
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRole();
+    }
+
+    private async Task LoadRole()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            currentRole = await RoleManagementService.GetRoleByIdAsync(RoleId);
+            
+            if (currentRole != null)
+            {
+                updateRoleDto = new UpdateRoleDto
+                {
+                    Id = currentRole.Id,
+                    Name = currentRole.Name,
+                    Description = currentRole.Description,
+                    Priority = currentRole.Priority,
+                    IsActive = currentRole.IsActive,
+                    RoleType = currentRole.RoleType
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading role: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SubmitUpdateRole()
+    {
+        try
+        {
+            isSubmitting = true;
+            StateHasChanged();
+
+            // Validate role name doesn't exist (excluding current role)
+            if (updateRoleDto.Name != currentRole!.Name)
+            {
+                var existingRole = await RoleManagementService.GetRoleByNameAsync(updateRoleDto.Name);
+                if (existingRole != null && existingRole.Id != RoleId)
+                {
+                    errorMessage = $"A role with the name '{updateRoleDto.Name}' already exists.";
+                    return;
+                }
+            }
+
+            var updatedRole = await RoleManagementService.UpdateRoleAsync(updateRoleDto, "Admin"); // TODO: Get current user
+            
+            successMessage = $"Role '{updatedRole.Name}' updated successfully.";
+            
+            // Reload the role to reflect changes
+            await LoadRole();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error updating role: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/admin/roles/{RoleId}");
+    }
+}

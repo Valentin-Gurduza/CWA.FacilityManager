@@ -13,15 +13,18 @@ namespace CWA.FacilityManager.Application.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly ILogger<UserProfileService> _logger;
 
         public UserProfileService(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
+            RoleManager<ApplicationRole> roleManager,
             ILogger<UserProfileService> logger)
         {
             _context = context;
             _userManager = userManager;
+            _roleManager = roleManager;
             _logger = logger;
         }
 
@@ -35,7 +38,44 @@ namespace CWA.FacilityManager.Application.Services
                     return null;
                 }
 
+                // Get simple role names for backward compatibility
                 var roles = await _userManager.GetRolesAsync(user);
+
+                // Get detailed role information including permissions
+                var detailedRoles = await _context.UserRoles
+                    .Where(ur => ur.UserId == userId && ur.IsActive)
+                    .Include(ur => ur.Role)
+                        .ThenInclude(r => r.RolePermissions.Where(rp => rp.IsActive))
+                        .ThenInclude(rp => rp.Permission)
+                    .Select(ur => new UserRoleDetailDto
+                    {
+                        RoleId = ur.RoleId,
+                        RoleName = ur.Role.Name!,
+                        Description = ur.Role.Description,
+                        Priority = ur.Role.Priority,
+                        IsSystemRole = ur.Role.IsSystemRole,
+                        IsActive = ur.Role.IsActive,
+                        RoleType = ur.Role.RoleType.ToString(),
+                        AssignedAt = ur.AssignedAt,
+                        AssignedBy = ur.AssignedBy,
+                        ExpiresAt = ur.ExpiresAt,
+                        Notes = ur.Notes,
+                        Permissions = ur.Role.RolePermissions
+                            .Where(rp => rp.IsActive)
+                            .Select(rp => new PermissionDetailDto
+                            {
+                                Id = rp.Permission.Id,
+                                Name = rp.Permission.Name,
+                                DisplayName = rp.Permission.DisplayName,
+                                Description = rp.Permission.Description,
+                                Module = rp.Permission.Module,
+                                Resource = rp.Permission.Resource,
+                                Action = rp.Permission.Action,
+                                IsSystemPermission = rp.Permission.IsSystemPermission
+                            }).ToList()
+                    })
+                    .OrderByDescending(r => r.Priority)
+                    .ToListAsync();
 
                 return new UserProfileDto
                 {
@@ -50,7 +90,8 @@ namespace CWA.FacilityManager.Application.Services
                     CreatedAt = user.CreatedAt,
                     LastLoginAt = user.LastLoginAt,
                     FullName = user.FullName,
-                    Roles = roles.ToList()
+                    Roles = roles.ToList(),
+                    DetailedRoles = detailedRoles
                 };
             }
             catch (Exception ex)

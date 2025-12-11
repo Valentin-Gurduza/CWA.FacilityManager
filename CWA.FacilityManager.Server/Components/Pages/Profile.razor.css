@@ -1,0 +1,351 @@
+/* ===== PROFILE PAGE STYLES ===== */
+
+/* ===== PAGE LAYOUT ===== */
+.profile-page-container {
+    min-height: 100vh;
+    background: var(--gradient-primary);
+}
+
+.page-header {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--gradient-secondary);
+    margin-bottom: 2rem;
+}
+
+.page-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: var(--radius-lg);
+    background: var(--gradient-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.75rem;
+    box-shadow: var(--shadow-md);
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+/* ===== PROFILE OVERVIEW CARD ===== */
+.profile-overview-card {
+    border: none;
+    position: sticky;
+    top: 2rem;
+}
+
+.profile-avatar {
+    position: relative;
+    display: inline-block;
+}
+
+.avatar-circle {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    background: var(--gradient-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.avatar-status {
+    position: absolute;
+    bottom: 0.25rem;
+    right: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 2px solid var(--card-bg);
+}
+
+.avatar-status.online {
+    background: var(--accent-success);
+}
+
+.profile-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.profile-email {
+    font-size: 1rem;
+    word-break: break-word;
+}
+
+.profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--tertiary-bg);
+    border: 1px solid var(--border-primary);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* ===== PROFILE DETAILS CARD ===== */
+.detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background: var(--tertiary-bg);
+    border: 1px solid var(--border-primary);
+    transition: var(--transition-fast);
+}
+
+.detail-item:hover {
+    background: var(--modal-bg);
+    transform: translateX(4px);
+}
+
+.detail-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-md);
+    background: var(--gradient-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.detail-content {
+    flex: 1;
+}
+
+.detail-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.detail-value {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* ===== FORM STYLING ===== */
+.form-floating label {
+    color: var(--text-muted);
+}
+
+.form-actions {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-primary);
+}
+
+/* ===== ROLES & PERMISSIONS ===== */
+.roles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.role-card {
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
+}
+
+.role-header {
+    margin-bottom: 0;
+}
+
+.role-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.role-description {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.role-metadata {
+    background: var(--tertiary-bg);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 1px solid var(--border-primary);
+}
+
+.metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.metadata-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metadata-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.metadata-value {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.permissions-section {
+    background: var(--secondary-bg);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 1px solid var(--border-primary);
+}
+
+.permissions-title {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.permissions-modules {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.permission-module {
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    border: 1px solid var(--border-primary);
+}
+
+.module-header {
+    color: var(--accent-primary);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.module-permissions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.resource-permissions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.resource-name {
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.permission-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* ===== LOADING & ERROR STATES ===== */
+.loading-container,
+.error-container {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.error-icon {
+    font-size: 3rem;
+    color: var(--accent-danger);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem 0;
+    }
+
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+    }
+
+    .profile-overview-card {
+        position: static;
+    }
+
+    .stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .metadata-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+}

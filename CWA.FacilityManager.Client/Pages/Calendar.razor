@@ -1,4 +1,4 @@
-@page "/calendar"
+﻿@page "/calendar"
 @using CWA.FacilityManager.Client.Services
 @using CWA.FacilityManager.Shared.DTOs
 @using Microsoft.AspNetCore.Authorization
@@ -7,14 +7,25 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveWebAssembly
+@attribute [Authorize]
 
-<PageTitle>Task Calendar</PageTitle>
+<PageTitle>My Task Calendar</PageTitle>
 
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>Task Calendar</h1>
+                <div>
+                    <h1><i class="bi bi-calendar"></i> My Task Calendar</h1>
+                    <AuthorizeView Roles="Administrator,Secretary">
+                        <Authorized>
+                            <p class="text-muted mb-0">As an administrator/secretary, you can view and manage all users' tasks</p>
+                        </Authorized>
+                        <NotAuthorized>
+                            <p class="text-muted mb-0">Your personal task calendar - only you can see these tasks</p>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
                 <div>
                     <button type="button" class="btn btn-primary" @onclick="ShowCreateModal">
                         <i class="bi bi-plus-circle"></i> Add Task
@@ -28,7 +39,7 @@
         <div class="col-md-3">
             <div class="card">
                 <div class="card-header">
-                    <h5>Filters</h5>
+                    <h5><i class="bi bi-funnel"></i> Filters</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -62,7 +73,7 @@
 
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5>Quick Stats</h5>
+                    <h5><i class="bi bi-bar-chart"></i> Quick Stats</h5>
                 </div>
                 <div class="card-body">
                     @if (filteredTasks != null)
@@ -71,24 +82,48 @@
                             <strong>Total Tasks:</strong> @filteredTasks.Count()
                         </div>
                         <div class="mb-2">
+                            <span class="badge bg-warning me-1"></span>
                             <strong>Pending:</strong> @filteredTasks.Count(t => t.Status == TaskStatusDto.Pending)
                         </div>
                         <div class="mb-2">
+                            <span class="badge bg-primary me-1"></span>
                             <strong>In Progress:</strong> @filteredTasks.Count(t => t.Status == TaskStatusDto.InProgress)
                         </div>
                         <div class="mb-2">
+                            <span class="badge bg-success me-1"></span>
                             <strong>Completed:</strong> @filteredTasks.Count(t => t.Status == TaskStatusDto.Completed)
+                        </div>
+                        <div class="mb-2">
+                            <span class="badge bg-danger me-1"></span>
+                            <strong>Cancelled:</strong> @filteredTasks.Count(t => t.Status == TaskStatusDto.Cancelled)
                         </div>
                     }
                 </div>
             </div>
+
+            <AuthorizeView Roles="Administrator,Secretary">
+                <Authorized>
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5><i class="bi bi-shield-check"></i> Admin Tools</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="small text-muted">As an admin/secretary, you can create tasks for other users and view all tasks in the system.</p>
+                            <div class="alert alert-info small">
+                                <i class="bi bi-info-circle"></i> 
+                                You're viewing tasks from all users. Regular users only see their own tasks.
+                            </div>
+                        </div>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
         </div>
 
         <div class="col-md-9">
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5>Calendar View</h5>
+                        <h5><i class="bi bi-calendar3"></i> Calendar View</h5>
                         <div class="btn-group" role="group">
                             <button type="button" class="btn @(currentView == CalendarView.Day ? "btn-primary" : "btn-outline-primary") btn-sm" @onclick="() => ChangeView(CalendarView.Day)">Day</button>
                             <button type="button" class="btn @(currentView == CalendarView.Week ? "btn-primary" : "btn-outline-primary") btn-sm" @onclick="() => ChangeView(CalendarView.Week)">Week</button>
@@ -99,10 +134,11 @@
                 <div class="card-body">
                     @if (loading)
                     {
-                        <div class="text-center">
-                            <div class="spinner-border" role="status">
-                                <span class="visually-hidden">Loading...</span>
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading your tasks...</span>
                             </div>
+                            <p class="mt-2 text-muted">Loading your calendar...</p>
                         </div>
                     }
                     else if (filteredTasks != null)
@@ -144,8 +180,12 @@
                                                     <div class="small task-item mt-1 p-1 rounded @(HasOverlappingTasks(task) ? "overlapping-task" : "")" 
                                                          style="background-color: @(task.Color ?? GetPriorityColor(task.Priority)); cursor: pointer; color: white;"
                                                          @onclick="() => ShowTaskDetails(task)"
-                                                         title="@(task.Title + (HasOverlappingTasks(task) ? " ?? This task overlaps with other tasks" : ""))">
-                                                        @task.Title
+                                                         title="@GetTaskTooltip(task)">
+                                                        <div class="task-title">@task.Title</div>
+                                                        @if (!string.IsNullOrEmpty(task.AssignedUserName))
+                                                        {
+                                                            <div class="task-user" style="font-size: 0.6rem; opacity: 0.8;">@task.AssignedUserName</div>
+                                                        }
                                                     </div>
                                                 }
                                                 @if (dayTasks.Count() > 3)
@@ -168,14 +208,24 @@
                                             <h6 class="mb-1">
                                                 @if (HasOverlappingTasks(task))
                                                 {
-                                                    <span class="text-warning me-1" title="This task overlaps with other tasks">??</span>
+                                                    <span class="text-warning me-1" title="This task overlaps with other tasks">⚠</span>
                                                 }
                                                 @task.Title
+                                                @if (!string.IsNullOrEmpty(task.AssignedUserName))
+                                                {
+                                                    <small class="text-muted">(@task.AssignedUserName)</small>
+                                                }
                                             </h6>
                                             <small class="badge bg-@GetStatusBadgeColor(task.Status)">@task.Status</small>
                                         </div>
                                         <p class="mb-1">@task.Description</p>
-                                        <small>@task.StartDate.ToString("MMM dd, yyyy HH:mm") - @task.EndDate.ToString("MMM dd, yyyy HH:mm")</small>
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock"></i> @task.StartDate.ToString("MMM dd, yyyy HH:mm") - @task.EndDate.ToString("MMM dd, yyyy HH:mm")
+                                            @if (!string.IsNullOrEmpty(task.Location))
+                                            {
+                                                <br/><i class="bi bi-geo-alt"></i> @task.Location
+                                            }
+                                        </small>
                                     </div>
                                 }
                             </div>
@@ -183,8 +233,10 @@
                     }
                     else
                     {
-                        <div class="text-center">
-                            <p>No tasks found.</p>
+                        <div class="text-center py-5">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
+                            <h5 class="mt-3">No tasks found</h5>
+                            <p class="text-muted">You don't have any tasks yet. Create your first task to get started!</p>
                             <button type="button" class="btn btn-primary" @onclick="ShowCreateModal">
                                 <i class="bi bi-plus-circle"></i> Create Your First Task
                             </button>
@@ -203,7 +255,10 @@
         <div class="modal-dialog modal-lg" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@(editingTask == null ? "Create New Task" : "Edit Task")</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-@(editingTask == null ? "plus-circle" : "pencil-square")"></i>
+                        @(editingTask == null ? "Create New Task" : "Edit Task")
+                    </h5>
                     <button type="button" class="btn-close" @onclick="HideTaskModal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -298,7 +353,7 @@
                         
                         <div class="mb-3">
                             <label class="form-label">Location</label>
-                            <InputText @bind-Value="taskModel.Location" class="form-control" />
+                            <InputText @bind-Value="taskModel.Location" class="form-control" placeholder="Optional location for this task" />
                         </div>
                         
                         <div class="mb-3">
@@ -318,12 +373,14 @@
                                 }
                                 else
                                 {
-                                    @(editingTask == null ? "Create" : "Update")
+                                    @(editingTask == null ? "Create Task" : "Update Task")
                                 }
                             </button>
                             @if (editingTask != null)
                             {
-                                <button type="button" class="btn btn-danger" @onclick="DeleteTaskAsync" disabled="@isSaving">Delete</button>
+                                <button type="button" class="btn btn-danger" @onclick="DeleteTaskAsync" disabled="@isSaving">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
                             }
                         </div>
                     </EditForm>
@@ -336,6 +393,7 @@
 @if (showAlert)
 {
     <div class="alert alert-@alertType alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;" role="alert">
+        <i class="bi bi-@(alertType == "success" ? "check-circle" : alertType == "danger" ? "exclamation-triangle" : "info-circle")"></i>
         @alertMessage
         <button type="button" class="btn-close" @onclick="HideAlert" aria-label="Close"></button>
     </div>
@@ -464,6 +522,24 @@
         
         // Tasks overlap if: task1Start < task2End AND task2Start < task1End
         return task1Start < task2End && task2Start < task1End;
+    }
+
+    private string GetTaskTooltip(CalendarTaskDto task)
+    {
+        var tooltip = task.Title;
+        if (!string.IsNullOrEmpty(task.Description))
+        {
+            tooltip += $"\n{task.Description}";
+        }
+        if (!string.IsNullOrEmpty(task.AssignedUserName))
+        {
+            tooltip += $"\nAssigned to: {task.AssignedUserName}";
+        }
+        if (HasOverlappingTasks(task))
+        {
+            tooltip += "\n⚠ This task overlaps with other tasks";
+        }
+        return tooltip;
     }
 
     private void CheckForOverlaps()
@@ -824,6 +900,19 @@
     .task-item {
         font-size: 0.75rem;
         text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+        overflow: hidden;
+    }
+
+    .task-title {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .task-user {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .calendar-grid .row {
@@ -836,5 +925,9 @@
 
     .position-fixed {
         position: fixed !important;
+    }
+
+    .overlapping-task {
+        border: 2px solid #ffc107 !important;
     }
 </style>

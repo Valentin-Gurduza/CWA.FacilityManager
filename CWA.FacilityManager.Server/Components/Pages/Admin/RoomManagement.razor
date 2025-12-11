@@ -1,299 +1,785 @@
 @page "/admin/rooms"
 @using Microsoft.AspNetCore.Authorization
+@using CWA.FacilityManager.Domain.Models
+@using CWA.FacilityManager.Domain.Enums
+@using CWA.FacilityManager.Application.Interfaces
+@using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize(Policy = "ActiveAdminOrSecretary")]
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@rendermode InteractiveServer
+@inject IRoomService RoomService
+@inject IBuildingService BuildingService
+@inject IBookingService BookingService
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Room Management</PageTitle>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">
-                    <i class="bi bi-door-open-fill me-2 text-primary"></i>Room Management
-                </h1>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-secondary">
-                        <i class="bi bi-calendar-week me-2"></i>View Schedule
-                    </button>
-                    <button class="btn btn-primary">
-                        <i class="bi bi-plus-square-fill me-2"></i>Add New Room
-                    </button>
-                </div>
-            </div>
-
-            <!-- Room Statistics -->
-            <div class="row mb-4">
-                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                    <div class="card text-center bg-light">
-                        <div class="card-body py-3">
-                            <i class="bi bi-door-open text-primary" style="font-size: 2rem;"></i>
-                            <h4 class="mt-2 mb-0">48</h4>
-                            <small class="text-muted">Total Rooms</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                    <div class="card text-center bg-light">
-                        <div class="card-body py-3">
-                            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-                            <h4 class="mt-2 mb-0">42</h4>
-                            <small class="text-muted">Available</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                    <div class="card text-center bg-light">
-                        <div class="card-body py-3">
-                            <i class="bi bi-calendar-event text-info" style="font-size: 2rem;"></i>
-                            <h4 class="mt-2 mb-0">5</h4>
-                            <small class="text-muted">Booked Today</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                    <div class="card text-center bg-light">
-                        <div class="card-body py-3">
-                            <i class="bi bi-tools text-warning" style="font-size: 2rem;"></i>
-                            <h4 class="mt-2 mb-0">1</h4>
-                            <small class="text-muted">Maintenance</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                    <div class="card text-center bg-light">
-                        <div class="card-body py-3">
-                            <i class="bi bi-people text-secondary" style="font-size: 2rem;"></i>
-                            <h4 class="mt-2 mb-0">1,248</h4>
-                            <small class="text-muted">Total Capacity</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                    <div class="card text-center bg-light">
-                        <div class="card-body py-3">
-                            <i class="bi bi-percent text-success" style="font-size: 2rem;"></i>
-                            <h4 class="mt-2 mb-0">87%</h4>
-                            <small class="text-muted">Utilization</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filters and Search -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-search"></i>
-                                </span>
-                                <input type="text" class="form-control" placeholder="Search rooms..." />
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select">
-                                <option value="">All Facilities</option>
-                                <option value="1">Facility 1</option>
-                                <option value="2">Facility 2</option>
-                                <option value="3">Facility 3</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select">
-                                <option value="">All Types</option>
-                                <option value="conference">Conference Room</option>
-                                <option value="meeting">Meeting Room</option>
-                                <option value="training">Training Room</option>
-                                <option value="event">Event Hall</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select class="form-select">
-                                <option value="">All Status</option>
-                                <option value="available">Available</option>
-                                <option value="booked">Booked</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control" placeholder="Min capacity" min="1" />
-                        </div>
-                        <div class="col-md-1">
-                            <button class="btn btn-outline-primary w-100">
-                                <i class="bi bi-funnel-fill"></i>
+<AuthorizeView Policy="ActiveAdminOrSecretary">
+    <Authorized>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3">
+                            <i class="fas fa-door-open me-2 text-primary"></i>Room Management
+                        </h1>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-info" @onclick="ViewAllSchedules" disabled="@isProcessing">
+                                <i class="fas fa-calendar-week me-2"></i>View All Schedules
+                            </button>
+                            <button class="btn btn-primary" @onclick="ShowAddRoomModal">
+                                <i class="fas fa-plus me-2"></i>Add New Room
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Rooms Table -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">Rooms (48)</h5>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <input type="radio" class="btn-check" name="viewOptions" id="tableView" autocomplete="off" checked>
-                            <label class="btn btn-outline-secondary" for="tableView">
-                                <i class="bi bi-table"></i> Table
-                            </label>
-                            <input type="radio" class="btn-check" name="viewOptions" id="cardView" autocomplete="off">
-                            <label class="btn btn-outline-secondary" for="cardView">
-                                <i class="bi bi-grid-3x3-gap"></i> Cards
-                            </label>
+                    <!-- Room Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-door-open text-primary" style="font-size: 2rem;"></i>
+                                    <h4 class="mt-2 mb-0">@(rooms?.Count() ?? 0)</h4>
+                                    <small class="text-muted">Total Rooms</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-check-circle text-success" style="font-size: 2rem;"></i>
+                                    <h4 class="mt-2 mb-0">@(rooms?.Count(r => r.IsActive && r.IsAvailable) ?? 0)</h4>
+                                    <small class="text-muted">Available</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-calendar-alt text-info" style="font-size: 2rem;"></i>
+                                    <h4 class="mt-2 mb-0">@todayBookings</h4>
+                                    <small class="text-muted">Booked Today</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-tools text-warning" style="font-size: 2rem;"></i>
+                                    <h4 class="mt-2 mb-0">@(rooms?.Count(r => !r.IsActive) ?? 0)</h4>
+                                    <small class="text-muted">Inactive</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-users text-secondary" style="font-size: 2rem;"></i>
+                                    <h4 class="mt-2 mb-0">@(rooms?.Sum(r => r.Capacity) ?? 0)</h4>
+                                    <small class="text-muted">Total Capacity</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-building text-info" style="font-size: 2rem;"></i>
+                                    <h4 class="mt-2 mb-0">@(buildings?.Count() ?? 0)</h4>
+                                    <small class="text-muted">Facilities</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Room Name</th>
-                                    <th>Facility</th>
-                                    <th>Type</th>
-                                    <th>Capacity</th>
-                                    <th>Equipment</th>
-                                    <th>Status</th>
-                                    <th>Next Booking</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (int i = 1; i <= 12; i++)
-                                {
-                                    var statusClass = i % 4 == 0 ? "warning" : (i % 6 == 0 ? "danger" : "success");
-                                    var statusText = i % 4 == 0 ? "Maintenance" : (i % 6 == 0 ? "Booked" : "Available");
-                                    var statusIcon = i % 4 == 0 ? "tools" : (i % 6 == 0 ? "calendar-event" : "check-circle");
-                                    
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="bg-primary rounded d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                                    <i class="bi bi-door-open text-white"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="fw-medium">Conference Room @i</div>
-                                                    <small class="text-muted">Floor @((i - 1) % 3 + 1)</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>Facility @((i - 1) % 4 + 1)</td>
-                                        <td>
-                                            <span class="badge bg-secondary">
-                                                @(i % 3 == 0 ? "Training" : (i % 2 == 0 ? "Meeting" : "Conference"))
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <i class="bi bi-people-fill me-1"></i>@(i * 5 + 10)
-                                        </td>
-                                        <td>
-                                            <div class="d-flex gap-1">
-                                                <span class="badge bg-light text-dark" title="Projector">
-                                                    <i class="bi bi-display"></i>
-                                                </span>
-                                                <span class="badge bg-light text-dark" title="Video Conference">
-                                                    <i class="bi bi-camera-video"></i>
-                                                </span>
-                                                @if (i % 2 == 0)
-                                                {
-                                                    <span class="badge bg-light text-dark" title="Whiteboard">
-                                                        <i class="bi bi-easel"></i>
-                                                    </span>
-                                                }
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-@statusClass">
-                                                <i class="bi bi-@statusIcon me-1"></i>@statusText
-                                            </span>
-                                        </td>
-                                        <td>
-                                            @if (i % 6 != 0)
+
+                    <!-- Status Messages -->
+                    @if (!string.IsNullOrEmpty(statusMessage))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert @(statusMessageType == "success" ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                                    <i class="fas @(statusMessageType == "success" ? "fa-check-circle" : "fa-exclamation-triangle")"></i>
+                                    @statusMessage
+                                    <button type="button" class="btn-close" @onclick="ClearStatusMessage"></button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Filters and Search -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" class="form-control" placeholder="Search rooms..." @bind="searchTerm" @bind:after="ApplyFilters" />
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select" @bind="buildingFilter" @bind:after="ApplyFilters">
+                                        <option value="">All Facilities</option>
+                                        @if (buildings != null)
+                                        {
+                                            @foreach (var building in buildings)
                                             {
-                                                <small class="text-muted">
-                                                    Tomorrow 10:00 AM<br>
-                                                    <span class="text-primary">Team Meeting</span>
-                                                </small>
+                                                <option value="@building.Id">@building.Name</option>
                                             }
-                                            else
-                                            {
-                                                <small class="text-danger">Currently in use</small>
-                                            }
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="dropdown">
-                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                                                        type="button" data-bs-toggle="dropdown">
-                                                    Actions
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end">
-                                                    <li><a class="dropdown-item" href="#">
-                                                        <i class="bi bi-eye-fill me-2"></i>View Details
-                                                    </a></li>
-                                                    <li><a class="dropdown-item" href="#">
-                                                        <i class="bi bi-calendar-week me-2"></i>View Schedule
-                                                    </a></li>
-                                                    <li><a class="dropdown-item" href="#">
-                                                        <i class="bi bi-calendar-plus me-2"></i>Book Room
-                                                    </a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li><a class="dropdown-item" href="#">
-                                                        <i class="bi bi-pencil-fill me-2"></i>Edit Room
-                                                    </a></li>
-                                                    @if (statusText == "Available")
-                                                    {
-                                                        <li><a class="dropdown-item text-warning" href="#">
-                                                            <i class="bi bi-tools me-2"></i>Mark for Maintenance
-                                                        </a></li>
-                                                    }
-                                                </ul>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select" @bind="activityFilter" @bind:after="ApplyFilters">
+                                        <option value="">All Types</option>
+                                        <option value="@ActivityType.Course">Course</option>
+                                        <option value="@ActivityType.Meeting">Meeting</option>
+                                        <option value="@ActivityType.Training">Training</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select" @bind="statusFilter" @bind:after="ApplyFilters">
+                                        <option value="">All Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="available">Available</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control" placeholder="Min capacity" min="1" @bind="minCapacityFilter" @bind:after="ApplyFilters" />
+                                </div>
+                                <div class="col-md-1">
+                                    <button class="btn btn-outline-primary w-100" @onclick="ResetFilters">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Showing 1-12 of 48 rooms</small>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0">
-                                <li class="page-item disabled">
-                                    <span class="page-link">Previous</span>
-                                </li>
-                                <li class="page-item active">
-                                    <span class="page-link">1</span>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">2</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">3</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">4</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
+
+                    <!-- Rooms Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Rooms (@(filteredRooms?.Count() ?? 0))</h5>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="viewOptions" id="tableView" autocomplete="off" checked @onchange="@(() => viewMode = "table")">
+                                    <label class="btn btn-outline-secondary" for="tableView">
+                                        <i class="fas fa-table"></i> Table
+                                    </label>
+                                    <input type="radio" class="btn-check" name="viewOptions" id="cardView" autocomplete="off" @onchange="@(() => viewMode = "card")">
+                                    <label class="btn btn-outline-secondary" for="cardView">
+                                        <i class="fas fa-th"></i> Cards
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            @if (filteredRooms == null)
+                            {
+                                <div class="text-center py-5">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            }
+                            else if (!filteredRooms.Any())
+                            {
+                                <div class="text-center py-5">
+                                    <i class="fas fa-door-open fa-4x text-muted mb-3"></i>
+                                    <h5>No Rooms Found</h5>
+                                    <p class="text-muted">
+                                        @if (HasActiveFilters())
+                                        {
+                                            <span>No rooms match your current filters.</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Start by adding your first room to the system!</span>
+                                        }
+                                    </p>
+                                    @if (!HasActiveFilters())
+                                    {
+                                        <button class="btn btn-primary" @onclick="ShowAddRoomModal">
+                                            <i class="fas fa-plus me-2"></i> Add Your First Room
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-primary" @onclick="ResetFilters">
+                                            <i class="fas fa-undo me-2"></i> Clear Filters
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            else if (viewMode == "table")
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Room Name</th>
+                                                <th>Facility</th>
+                                                <th>Type</th>
+                                                <th>Capacity</th>
+                                                <th>Status</th>
+                                                <th>Next Booking</th>
+                                                <th class="text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var room in filteredRooms.Take(pageSize))
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="bg-primary rounded d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                                <i class="fas fa-door-open text-white"></i>
+                                                            </div>
+                                                            <div>
+                                                                <div class="fw-medium">@room.Name</div>
+                                                                @if (!string.IsNullOrEmpty(room.RoomNumber))
+                                                                {
+                                                                    <small class="text-muted">Room @room.RoomNumber</small>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>@room.Building?.Name</td>
+                                                    <td>
+                                                        <span class="badge @GetActivityBadgeClass(room.Activity)">
+                                                            <i class="fas @GetActivityIcon(room.Activity) me-1"></i>@room.Activity
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <i class="fas fa-users me-1"></i>@room.Capacity
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge @GetStatusBadgeClass(room)">
+                                                            <i class="fas @GetStatusIcon(room) me-1"></i>@GetStatusText(room)
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        @* TODO: Implement next booking logic *@
+                                                        <small class="text-muted">
+                                                            Available
+                                                        </small>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <div class="dropdown">
+                                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                                    type="button" data-bs-toggle="dropdown">
+                                                                Actions
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                                <li><button class="dropdown-item" @onclick="() => ViewRoomDetails(room)">
+                                                                    <i class="fas fa-eye me-2"></i>View Details
+                                                                </button></li>
+                                                                <li><button class="dropdown-item" @onclick="() => ViewRoomSchedule(room)">
+                                                                    <i class="fas fa-calendar-week me-2"></i>View Schedule
+                                                                </button></li>
+                                                                <li><button class="dropdown-item" @onclick="() => BookRoom(room)">
+                                                                    <i class="fas fa-calendar-plus me-2"></i>Book Room
+                                                                </button></li>
+                                                                <li><hr class="dropdown-divider"></li>
+                                                                <li><button class="dropdown-item" @onclick="() => EditRoom(room)">
+                                                                    <i class="fas fa-edit me-2"></i>Edit Room
+                                                                </button></li>
+                                                                <li><button class="dropdown-item" @onclick="() => ToggleRoomStatus(room)">
+                                                                    <i class="fas @(room.IsActive ? "fa-pause" : "fa-play") me-2"></i>@(room.IsActive ? "Deactivate" : "Activate")
+                                                                </button></li>
+                                                                <li><button class="dropdown-item text-danger" @onclick="() => DeleteRoom(room)">
+                                                                    <i class="fas fa-trash me-2"></i>Delete
+                                                                </button></li>
+                                                            </ul>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Card View -->
+                                <div class="row p-3">
+                                    @foreach (var room in filteredRooms.Take(pageSize))
+                                    {
+                                        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                                            <div class="card h-100 room-card">
+                                                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                                                    <h6 class="card-title mb-0 text-primary">@room.Name</h6>
+                                                    <span class="badge @GetStatusBadgeClass(room)">@GetStatusText(room)</span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="room-info">
+                                                        <p class="mb-2">
+                                                            <i class="fas fa-building text-primary me-2"></i>
+                                                            <strong>Building:</strong> @room.Building?.Name
+                                                        </p>
+                                                        @if (!string.IsNullOrEmpty(room.RoomNumber))
+                                                        {
+                                                            <p class="mb-2">
+                                                                <i class="fas fa-door-open text-success me-2"></i>
+                                                                <strong>Room:</strong> @room.RoomNumber
+                                                            </p>
+                                                        }
+                                                        <p class="mb-2">
+                                                            <i class="fas fa-users text-info me-2"></i>
+                                                            <strong>Capacity:</strong> @room.Capacity people
+                                                        </p>
+                                                        <p class="mb-2">
+                                                            <i class="fas @GetActivityIcon(room.Activity) @GetActivityColor(room.Activity) me-2"></i>
+                                                            <strong>Type:</strong> @room.Activity
+                                                        </p>
+                                                        @if (!string.IsNullOrEmpty(room.Description))
+                                                        {
+                                                            <p class="text-muted small">
+                                                                <i class="fas fa-info-circle me-1"></i>
+                                                                @((room.Description.Length > 80) ? room.Description.Substring(0, 80) + "..." : room.Description)
+                                                            </p>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div class="card-footer bg-transparent">
+                                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => ViewRoomDetails(room)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => EditRoom(room)">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-info btn-sm" @onclick="() => BookRoom(room)">
+                                                            <i class="fas fa-calendar-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        @if (filteredRooms != null && filteredRooms.Count() > pageSize)
+                        {
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Showing @Math.Min(pageSize, filteredRooms.Count()) of @filteredRooms.Count() rooms</small>
+                                    <nav>
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => ChangePage(currentPage - 1)" disabled="@(currentPage == 1)">Previous</button>
+                                            </li>
+                                            @for (int i = 1; i <= totalPages; i++)
+                                            {
+                                                <li class="page-item @(currentPage == i ? "active" : "")">
+                                                    <button class="page-link" @onclick="() => ChangePage(i)">@i</button>
+                                                </li>
+                                            }
+                                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                                <button class="page-link" @onclick="() => ChangePage(currentPage + 1)" disabled="@(currentPage == totalPages)">Next</button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+
+        <!-- Add/Edit Room Modal (simplified - full implementation would be similar to the main Rooms page) -->
+        @if (showRoomModal)
+        {
+            <div class="modal-backdrop fade show" @onclick="CloseModal"></div>
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1060;">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content" @onclick:stopPropagation="true">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas @(isEditMode ? "fa-edit" : "fa-plus") me-2"></i>
+                                @(isEditMode ? "Edit Room" : "Add New Room")
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 
+                                For a full room management experience, please use the main <a href="/rooms" class="alert-link">Rooms page</a>.
+                            </div>
+                            <p>This is a simplified admin view. The full room creation and editing functionality is available on the main rooms page.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                            <a href="/rooms" class="btn btn-primary">Go to Full Room Manager</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="text-center mt-5">
+                        <i class="fas fa-lock fa-4x text-muted mb-4"></i>
+                        <h2>Access Restricted</h2>
+                        <p class="text-muted">You need administrator or secretary privileges to access room management.</p>
+                        <a href="/Account/Login" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
-    // Placeholder for future implementation
+    private IEnumerable<Room>? rooms;
+    private IEnumerable<Room>? filteredRooms;
+    private IEnumerable<Building>? buildings;
+    private bool showRoomModal = false;
+    private bool isEditMode = false;
+    private bool isProcessing = false;
+    private string statusMessage = string.Empty;
+    private string statusMessageType = "success";
+    private string viewMode = "table";
+    private int todayBookings = 0;
+
+    // Filter properties
+    private string searchTerm = string.Empty;
+    private string buildingFilter = string.Empty;
+    private string activityFilter = string.Empty;
+    private string statusFilter = string.Empty;
+    private int? minCapacityFilter;
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 20;
+    private int totalPages => filteredRooms != null ? (int)Math.Ceiling((double)filteredRooms.Count() / pageSize) : 1;
+
     protected override async Task OnInitializedAsync()
     {
-        await Task.CompletedTask;
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            rooms = await RoomService.GetAllRoomsAsync();
+            buildings = await BuildingService.GetAllBuildingsAsync();
+            
+            // Calculate today's bookings (simplified)
+            todayBookings = 5; // TODO: Implement actual booking count for today
+            
+            ApplyFilters();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error loading data: {ex.Message}", "error");
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        if (rooms == null)
+        {
+            filteredRooms = null;
+            return;
+        }
+
+        filteredRooms = rooms;
+
+        // Search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredRooms = filteredRooms.Where(r => 
+                r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (r.RoomNumber?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (r.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        // Building filter
+        if (!string.IsNullOrEmpty(buildingFilter) && int.TryParse(buildingFilter, out int buildingId))
+        {
+            filteredRooms = filteredRooms.Where(r => r.BuildingId == buildingId);
+        }
+
+        // Activity filter
+        if (!string.IsNullOrEmpty(activityFilter) && Enum.TryParse<ActivityType>(activityFilter, out var activity))
+        {
+            filteredRooms = filteredRooms.Where(r => r.Activity == activity);
+        }
+
+        // Status filter
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            filteredRooms = statusFilter switch
+            {
+                "active" => filteredRooms.Where(r => r.IsActive),
+                "inactive" => filteredRooms.Where(r => !r.IsActive),
+                "available" => filteredRooms.Where(r => r.IsActive && r.IsAvailable),
+                _ => filteredRooms
+            };
+        }
+
+        // Capacity filter
+        if (minCapacityFilter.HasValue)
+        {
+            filteredRooms = filteredRooms.Where(r => r.Capacity >= minCapacityFilter.Value);
+        }
+
+        // Reset pagination when filters change
+        currentPage = 1;
+        StateHasChanged();
+    }
+
+    private void ResetFilters()
+    {
+        searchTerm = string.Empty;
+        buildingFilter = string.Empty;
+        activityFilter = string.Empty;
+        statusFilter = string.Empty;
+        minCapacityFilter = null;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrEmpty(searchTerm) || 
+               !string.IsNullOrEmpty(buildingFilter) || 
+               !string.IsNullOrEmpty(activityFilter) || 
+               !string.IsNullOrEmpty(statusFilter) || 
+               minCapacityFilter.HasValue;
+    }
+
+    private void ChangePage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddRoomModal()
+    {
+        isEditMode = false;
+        showRoomModal = true;
+        StateHasChanged();
+    }
+
+    private void EditRoom(Room room)
+    {
+        isEditMode = true;
+        showRoomModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseModal()
+    {
+        showRoomModal = false;
+        isEditMode = false;
+        StateHasChanged();
+    }
+
+    private void ViewRoomDetails(Room room)
+    {
+        ShowStatusMessage($"Viewing details for {room.Name}...", "success");
+        // TODO: Implement room details modal or navigation
+    }
+
+    private void ViewRoomSchedule(Room room)
+    {
+        ShowStatusMessage($"Loading schedule for {room.Name}...", "success");
+        // TODO: Implement room schedule view
+    }
+
+    private void BookRoom(Room room)
+    {
+        ShowStatusMessage($"Opening booking form for {room.Name}...", "success");
+        // TODO: Implement quick booking functionality
+    }
+
+    private async Task ToggleRoomStatus(Room room)
+    {
+        try
+        {
+            room.IsActive = !room.IsActive;
+            await RoomService.UpdateRoomAsync(room);
+            
+            var status = room.IsActive ? "activated" : "deactivated";
+            ShowStatusMessage($"Room '{room.Name}' has been {status}!", "success");
+            
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error updating room status: {ex.Message}", "error");
+        }
+    }
+
+    private async Task DeleteRoom(Room room)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{room.Name}'? This action cannot be undone."))
+        {
+            try
+            {
+                var result = await RoomService.DeleteRoomAsync(room.Id);
+                if (result)
+                {
+                    ShowStatusMessage($"Room '{room.Name}' deleted successfully!", "success");
+                    await LoadData();
+                }
+                else
+                {
+                    ShowStatusMessage("Failed to delete room. Room not found.", "error");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowStatusMessage($"Error deleting room: {ex.Message}", "error");
+            }
+        }
+    }
+
+    private async Task ViewAllSchedules()
+    {
+        try
+        {
+            isProcessing = true;
+            StateHasChanged();
+
+            // Simulate loading all schedules
+            await Task.Delay(1000);
+            ShowStatusMessage("Loading comprehensive room schedules...", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowStatusMessage($"Error loading schedules: {ex.Message}", "error");
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowStatusMessage(string message, string type)
+    {
+        statusMessage = message;
+        statusMessageType = type;
+        StateHasChanged();
+
+        if (type == "success")
+        {
+            Task.Delay(3000).ContinueWith(task =>
+            {
+                InvokeAsync(() =>
+                {
+                    ClearStatusMessage();
+                    StateHasChanged();
+                });
+            });
+        }
+    }
+
+    private void ClearStatusMessage()
+    {
+        statusMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private string GetActivityIcon(ActivityType activity)
+    {
+        return activity switch
+        {
+            ActivityType.Course => "fa-graduation-cap",
+            ActivityType.Meeting => "fa-handshake",
+            ActivityType.Training => "fa-dumbbell",
+            _ => "fa-tasks"
+        };
+    }
+
+    private string GetActivityColor(ActivityType activity)
+    {
+        return activity switch
+        {
+            ActivityType.Course => "text-success",
+            ActivityType.Meeting => "text-primary",
+            ActivityType.Training => "text-warning",
+            _ => "text-secondary"
+        };
+    }
+
+    private string GetActivityBadgeClass(ActivityType activity)
+    {
+        return activity switch
+        {
+            ActivityType.Course => "bg-success",
+            ActivityType.Meeting => "bg-primary",
+            ActivityType.Training => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetStatusBadgeClass(Room room)
+    {
+        if (!room.IsActive) return "bg-danger";
+        if (!room.IsAvailable) return "bg-warning";
+        return "bg-success";
+    }
+
+    private string GetStatusIcon(Room room)
+    {
+        if (!room.IsActive) return "fa-pause";
+        if (!room.IsAvailable) return "fa-calendar-alt";
+        return "fa-check-circle";
+    }
+
+    private string GetStatusText(Room room)
+    {
+        if (!room.IsActive) return "Inactive";
+        if (!room.IsAvailable) return "Booked";
+        return "Available";
     }
 }
+
+<style>
+    .room-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .room-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1040;
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .room-info i {
+        width: 20px;
+    }
+</style>

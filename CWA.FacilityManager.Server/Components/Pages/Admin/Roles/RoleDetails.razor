@@ -1,0 +1,508 @@
+@page "/admin/roles/{roleId}"
+@using CWA.FacilityManager.Application.DTOs.UserManagement
+@using CWA.FacilityManager.Application.Interfaces.UserManagement
+@using Microsoft.AspNetCore.Authorization
+@inject IRoleManagementService RoleManagementService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@attribute [Authorize(Policy = "ActiveAdmin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Role Details</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="/admin/roles" class="text-decoration-none">Role Management</a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">@(currentRole?.Name ?? "Role Details")</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3">
+                        <i class="bi bi-shield-check me-2"></i>@(currentRole?.Name ?? "Loading...")
+                        @if (currentRole?.IsSystemRole == true)
+                        {
+                            <span class="badge bg-info ms-2">System Role</span>
+                        }
+                        @if (currentRole?.IsActive == false)
+                        {
+                            <span class="badge bg-warning ms-2">Inactive</span>
+                        }
+                    </h1>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary me-2" @onclick="@(() => Navigation.NavigateTo("/admin/roles"))">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Roles
+                    </button>
+                    @if (currentRole != null && !currentRole.IsSystemRole)
+                    {
+                        <div class="btn-group">
+                            <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo($"/admin/roles/{RoleId}/edit"))">
+                                <i class="bi bi-pencil me-1"></i>Edit Role
+                            </button>
+                            <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/admin/roles/@RoleId/permissions">
+                                    <i class="bi bi-key me-2"></i>Manage Permissions
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                @if (currentRole.IsActive)
+                                {
+                                    <li><button class="dropdown-item text-warning" @onclick="() => DeactivateRole()">
+                                        <i class="bi bi-pause-circle me-2"></i>Deactivate Role
+                                    </button></li>
+                                }
+                                else
+                                {
+                                    <li><button class="dropdown-item text-success" @onclick="() => ActivateRole()">
+                                        <i class="bi bi-play-circle me-2"></i>Activate Role
+                                    </button></li>
+                                }
+                                @if (currentRole.UserCount == 0)
+                                {
+                                    <li><button class="dropdown-item text-danger" @onclick="() => DeleteRole()">
+                                        <i class="bi bi-trash me-2"></i>Delete Role
+                                    </button></li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else if (currentRole != null)
+                    {
+                        <button class="btn btn-outline-primary" @onclick="@(() => Navigation.NavigateTo($"/admin/roles/{RoleId}/permissions"))">
+                            <i class="bi bi-key me-1"></i>View Permissions
+                        </button>
+                    }
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (currentRole == null)
+            {
+                <div class="alert alert-danger">
+                    <h5>Role Not Found</h5>
+                    <p>The role you're looking for could not be found.</p>
+                    <a href="/admin/roles" class="btn btn-primary">Back to Roles</a>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-8">
+                        <!-- Role Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>Role Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Name:</dt>
+                                            <dd class="col-sm-8">@currentRole.Name</dd>
+                                            
+                                            <dt class="col-sm-4">Priority:</dt>
+                                            <dd class="col-sm-8">@currentRole.Priority</dd>
+                                            
+                                            <dt class="col-sm-4">Type:</dt>
+                                            <dd class="col-sm-8">
+                                                @if (currentRole.IsSystemRole)
+                                                {
+                                                    <span class="badge bg-info">System Role</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">@currentRole.RoleType</span>
+                                                }
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Status:</dt>
+                                            <dd class="col-sm-8">
+                                                @if (currentRole.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">Inactive</span>
+                                                }
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Created:</dt>
+                                            <dd class="col-sm-8">@currentRole.CreatedAt.ToString("MMM dd, yyyy HH:mm")</dd>
+                                            
+                                            @if (!string.IsNullOrEmpty(currentRole.CreatedBy))
+                                            {
+                                                <dt class="col-sm-4">Created By:</dt>
+                                                <dd class="col-sm-8">@currentRole.CreatedBy</dd>
+                                            }
+                                            
+                                            @if (currentRole.LastModifiedAt.HasValue)
+                                            {
+                                                <dt class="col-sm-4">Modified:</dt>
+                                                <dd class="col-sm-8">@currentRole.LastModifiedAt.Value.ToString("MMM dd, yyyy HH:mm")</dd>
+                                                
+                                                @if (!string.IsNullOrEmpty(currentRole.ModifiedBy))
+                                                {
+                                                    <dt class="col-sm-4">Modified By:</dt>
+                                                    <dd class="col-sm-8">@currentRole.ModifiedBy</dd>
+                                                }
+                                            }
+                                        </dl>
+                                    </div>
+                                </div>
+                                
+                                @if (!string.IsNullOrEmpty(currentRole.Description))
+                                {
+                                    <hr />
+                                    <div>
+                                        <h6>Description</h6>
+                                        <p class="text-muted">@currentRole.Description</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Permissions -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-key me-2"></i>Permissions (@currentRole.Permissions.Count)
+                                </h5>
+                                @if (!currentRole.IsSystemRole)
+                                {
+                                    <a href="/admin/roles/@RoleId/permissions" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil me-1"></i>Manage Permissions
+                                    </a>
+                                }
+                            </div>
+                            <div class="card-body">
+                                @if (currentRole.Permissions.Any())
+                                {
+                                    <div class="row">
+                                        @foreach (var group in permissionGroups)
+                                        {
+                                            @if (group.Permissions.Any())
+                                            {
+                                                <div class="col-md-6 mb-3">
+                                                    <h6 class="text-primary">@group.Module</h6>
+                                                    <ul class="list-group list-group-flush">
+                                                        @foreach (var permission in group.Permissions.Take(5))
+                                                        {
+                                                            <li class="list-group-item border-0 py-1 px-0">
+                                                                <i class="bi bi-check-circle text-success me-2"></i>
+                                                                @permission.DisplayName
+                                                            </li>
+                                                        }
+                                                        @if (group.Permissions.Count > 5)
+                                                        {
+                                                            <li class="list-group-item border-0 py-1 px-0 text-muted">
+                                                                <small>and @(group.Permissions.Count - 5) more...</small>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center text-muted py-4">
+                                        <i class="bi bi-key display-4"></i>
+                                        <p class="mt-2">No permissions assigned to this role.</p>
+                                        @if (!currentRole.IsSystemRole)
+                                        {
+                                            <a href="/admin/roles/@RoleId/permissions" class="btn btn-primary">
+                                                <i class="bi bi-plus-circle me-1"></i>Assign Permissions
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <!-- Statistics -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-graph-up me-2"></i>Statistics
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <h4 class="text-primary mb-1">@currentRole.UserCount</h4>
+                                            <small class="text-muted">Users</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h4 class="text-success mb-1">@currentRole.Permissions.Count</h4>
+                                        <small class="text-muted">Permissions</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-lightning me-2"></i>Quick Actions
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <a href="/admin/roles/@RoleId/permissions" class="btn btn-outline-primary">
+                                        <i class="bi bi-key me-2"></i>
+                                        @(currentRole.IsSystemRole ? "View" : "Manage") Permissions
+                                    </a>
+                                    
+                                    @if (!currentRole.IsSystemRole)
+                                    {
+                                        <a href="/admin/roles/@RoleId/edit" class="btn btn-outline-success">
+                                            <i class="bi bi-pencil me-2"></i>Edit Role
+                                        </a>
+                                    }
+                                    
+                                    <button class="btn btn-outline-info" @onclick="ViewAuditLog">
+                                        <i class="bi bi-clock-history me-2"></i>View Audit Log
+                                    </button>
+                                    
+                                    @if (!currentRole.IsSystemRole)
+                                    {
+                                        @if (currentRole.IsActive)
+                                        {
+                                            <button class="btn btn-outline-warning" @onclick="DeactivateRole">
+                                                <i class="bi bi-pause-circle me-2"></i>Deactivate Role
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-success" @onclick="ActivateRole">
+                                                <i class="bi bi-play-circle me-2"></i>Activate Role
+                                            </button>
+                                        }
+                                        
+                                        @if (currentRole.UserCount == 0)
+                                        {
+                                            <button class="btn btn-outline-danger" @onclick="DeleteRole">
+                                                <i class="bi bi-trash me-2"></i>Delete Role
+                                            </button>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => successMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @successMessage
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @errorMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string RoleId { get; set; } = string.Empty;
+    
+    private RoleDto? currentRole;
+    private List<PermissionGroupDto> permissionGroups = new();
+    private bool isLoading = true;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    public class PermissionGroupDto
+    {
+        public string Module { get; set; } = string.Empty;
+        public List<PermissionDto> Permissions { get; set; } = new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRole();
+    }
+
+    private async Task LoadRole()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            currentRole = await RoleManagementService.GetRoleByIdAsync(RoleId);
+            
+            if (currentRole != null)
+            {
+                // Group permissions by module
+                permissionGroups = currentRole.Permissions
+                    .GroupBy(p => p.Module)
+                    .Select(g => new PermissionGroupDto
+                    {
+                        Module = GetModuleDisplayName(g.Key),
+                        Permissions = g.ToList()
+                    })
+                    .OrderBy(g => g.Module)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading role: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetModuleDisplayName(string module)
+    {
+        return module switch
+        {
+            "UserManagement" => "User Management",
+            "FacilityManagement" => "Facility Management",
+            "BookingManagement" => "Booking Management",
+            "EventManagement" => "Event Management",
+            "ReportManagement" => "Report Management",
+            "SystemManagement" => "System Management",
+            _ => module
+        };
+    }
+
+    private async Task ActivateRole()
+    {
+        try
+        {
+            var result = await RoleManagementService.ActivateRoleAsync(RoleId, "Admin"); // TODO: Get current user
+            if (result)
+            {
+                successMessage = $"Role '{currentRole!.Name}' has been activated.";
+                await LoadRole();
+            }
+            else
+            {
+                errorMessage = "Failed to activate role.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error activating role: {ex.Message}";
+        }
+    }
+
+    private async Task DeactivateRole()
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Are you sure you want to deactivate the role '{currentRole!.Name}'? Users with this role may lose access to certain features.");
+        
+        if (confirmed)
+        {
+            try
+            {
+                var result = await RoleManagementService.DeactivateRoleAsync(RoleId, "Admin"); // TODO: Get current user
+                if (result)
+                {
+                    successMessage = $"Role '{currentRole!.Name}' has been deactivated.";
+                    await LoadRole();
+                }
+                else
+                {
+                    errorMessage = "Failed to deactivate role.";
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deactivating role: {ex.Message}";
+            }
+        }
+    }
+
+    private async Task DeleteRole()
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Are you sure you want to permanently delete the role '{currentRole!.Name}'? This action cannot be undone.");
+        
+        if (confirmed)
+        {
+            try
+            {
+                var result = await RoleManagementService.DeleteRoleAsync(RoleId, "Admin"); // TODO: Get current user
+                if (result)
+                {
+                    successMessage = $"Role '{currentRole!.Name}' has been deleted.";
+                    await Task.Delay(1500); // Show success message briefly
+                    Navigation.NavigateTo("/admin/roles");
+                }
+                else
+                {
+                    errorMessage = "Failed to delete role.";
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deleting role: {ex.Message}";
+            }
+        }
+    }
+
+    private void ViewAuditLog()
+    {
+        // TODO: Implement audit log viewing functionality
+        Navigation.NavigateTo($"/admin/audit?entity=Role&entityId={RoleId}");
+    }
+}

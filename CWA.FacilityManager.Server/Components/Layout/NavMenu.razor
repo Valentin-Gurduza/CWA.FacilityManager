@@ -150,43 +150,8 @@
                                         <span>Events</span>
                                     </NavLink>
                                 </div>
-                                <div class="nav-item px-3 ps-4">
-                                    <NavLink class="nav-link admin-nav-link d-flex align-items-center" href="admin/reports">
-                                        <span class="bi bi-graph-up me-2" aria-hidden="true"></span>
-                                        <span>Reports & Analytics</span>
-                                    </NavLink>
-                                </div>
                             </div>
                         }
-                    </Authorized>
-                </AuthorizeView>
-
-                <!-- Renter Quick Access -->
-                <AuthorizeView Roles="Renter" Context="renterAuth" Policy="ActiveUser">
-                    <Authorized>
-                        <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary">
-                            <div class="text-light fw-bold mb-2">
-                                <span class="bi bi-calendar-check me-2" aria-hidden="true"></span> Quick Access
-                            </div>
-                        </div>
-
-                        <div class="nav-item px-3 ps-4 renter-only">
-                            <NavLink class="nav-link" href="facilities">
-                                <span class="bi bi-building me-2" aria-hidden="true"></span> Browse Facilities
-                            </NavLink>
-                        </div>
-
-                        <div class="nav-item px-3 ps-4 renter-only">
-                            <NavLink class="nav-link" href="bookings/my">
-                                <span class="bi bi-calendar-check me-2" aria-hidden="true"></span> My Bookings
-                            </NavLink>
-                        </div>
-
-                        <div class="nav-item px-3 ps-4 renter-only">
-                            <NavLink class="nav-link" href="events/my">
-                                <span class="bi bi-calendar-event me-2" aria-hidden="true"></span> My Events
-                            </NavLink>
-                        </div>
                     </Authorized>
                 </AuthorizeView>
             </Authorized>
@@ -261,8 +226,7 @@
         else if (currentUrl.StartsWith("admin/facilities", StringComparison.OrdinalIgnoreCase) ||
                  currentUrl.StartsWith("admin/rooms", StringComparison.OrdinalIgnoreCase) ||
                  currentUrl.StartsWith("admin/bookings", StringComparison.OrdinalIgnoreCase) ||
-                 currentUrl.StartsWith("admin/events", StringComparison.OrdinalIgnoreCase) ||
-                 currentUrl.StartsWith("admin/reports", StringComparison.OrdinalIgnoreCase))
+                 currentUrl.StartsWith("admin/events", StringComparison.OrdinalIgnoreCase))
         {
             isFacilityManagementExpanded = true;
             isAdministrationExpanded = false;
@@ -287,4 +251,4 @@
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
-}
+}}

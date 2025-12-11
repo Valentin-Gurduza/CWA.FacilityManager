@@ -1,0 +1,474 @@
+@page "/admin/roles/create"
+@using CWA.FacilityManager.Application.DTOs.UserManagement
+@using CWA.FacilityManager.Application.Interfaces.UserManagement
+@using CWA.FacilityManager.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+@inject IRoleManagementService RoleManagementService
+@inject IPermissionService PermissionService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@attribute [Authorize(Policy = "ActiveAdmin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Create Role</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="/admin/roles" class="text-decoration-none">Role Management</a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Create Role</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Role
+                    </h1>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary me-2" @onclick="Cancel">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Roles
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>Role Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <EditForm Model="createRoleDto" OnValidSubmit="SubmitCreateRole">
+                                    <DataAnnotationsValidator />
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <div class="form-floating">
+                                                <InputText @bind-Value="createRoleDto.Name" id="roleName" class="form-control" placeholder="Role Name" />
+                                                <label for="roleName">Role Name *</label>
+                                                <ValidationMessage For="() => createRoleDto.Name" class="text-danger" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-4">
+                                            <div class="form-floating">
+                                                <InputNumber @bind-Value="createRoleDto.Priority" id="rolePriority" class="form-control" placeholder="Priority" />
+                                                <label for="rolePriority">Priority</label>
+                                                <ValidationMessage For="() => createRoleDto.Priority" class="text-danger" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <div class="form-floating">
+                                                <InputTextArea @bind-Value="createRoleDto.Description" id="roleDescription" class="form-control" placeholder="Description" style="height: 100px" />
+                                                <label for="roleDescription">Description</label>
+                                                <ValidationMessage For="() => createRoleDto.Description" class="text-danger" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Role Type</label>
+                                            <div class="form-check">
+                                                <input type="radio" 
+                                                       name="roleType" 
+                                                       value="@((int)RoleType.Custom)" 
+                                                       checked="@(createRoleDto.RoleType == RoleType.Custom)" 
+                                                       @onchange="() => createRoleDto.RoleType = RoleType.Custom"
+                                                       id="roleTypeCustom" 
+                                                       class="form-check-input" />
+                                                <label class="form-check-label" for="roleTypeCustom">
+                                                    Custom Role
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input type="radio" 
+                                                       name="roleType" 
+                                                       value="@((int)RoleType.Secretary)" 
+                                                       checked="@(createRoleDto.RoleType == RoleType.Secretary)" 
+                                                       @onchange="() => createRoleDto.RoleType = RoleType.Secretary"
+                                                       id="roleTypeSecretary" 
+                                                       class="form-check-input" />
+                                                <label class="form-check-label" for="roleTypeSecretary">
+                                                    Secretary Role
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-4" />
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-key me-2"></i>Permissions
+                                            <small class="text-muted">(@selectedPermissions.Count selected)</small>
+                                        </h6>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <input type="checkbox" class="btn-check" id="selectAll" @onchange="ToggleAllPermissions" checked="@allPermissionsSelected" />
+                                            <label class="btn btn-outline-primary" for="selectAll">
+                                                @(allPermissionsSelected ? "Deselect All" : "Select All")
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    @if (permissionGroups.Any())
+                                    {
+                                        <div class="mt-3">
+                                            @foreach (var group in permissionGroups)
+                                            {
+                                                <div class="card mb-3">
+                                                    <div class="card-header">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <h6 class="mb-0">@group.ModuleDisplayName</h6>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                                    @onclick="() => ToggleModulePermissions(group.Module)">
+                                                                <i class="bi bi-check2-square me-1"></i>
+                                                                Toggle Module
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        @foreach (var resource in group.Resources)
+                                                        {
+                                                            <div class="mb-3">
+                                                                <h6 class="text-muted mb-2">@resource.ResourceDisplayName</h6>
+                                                                <div class="row g-2">
+                                                                    @foreach (var permission in resource.Permissions)
+                                                                    {
+                                                                        <div class="col-md-3">
+                                                                            <div class="form-check">
+                                                                                <input type="checkbox" 
+                                                                                       class="form-check-input" 
+                                                                                       id="permission_@permission.Id"
+                                                                                       checked="@selectedPermissions.Contains(permission.Id)"
+                                                                                       @onchange="(e) => TogglePermission(permission.Id, (bool)(e.Value ?? false))" />
+                                                                                <label class="form-check-label" for="permission_@permission.Id">
+                                                                                    @permission.DisplayName
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    
+                                    <div class="d-flex justify-content-end gap-2 mt-4">
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">
+                                            <i class="bi bi-x-circle me-1"></i>Cancel
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                            @if (isSubmitting)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-check-circle me-1"></i>
+                                            }
+                                            Create Role
+                                        </button>
+                                    </div>
+                                    
+                                    <ValidationSummary class="text-danger mt-3" />
+                                </EditForm>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>Role Creation Tips
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <h6>Creating a Role</h6>
+                                    <ul class="mb-0">
+                                        <li>Choose a descriptive role name</li>
+                                        <li>Set an appropriate priority (higher = more access)</li>
+                                        <li>Select only necessary permissions</li>
+                                        <li>Custom roles can be modified later</li>
+                                        <li>Secretary roles are for organization staff</li>
+                                    </ul>
+                                </div>
+                                
+                                @if (selectedPermissions.Any())
+                                {
+                                    <div class="mt-3">
+                                        <h6>Selected Permissions (@selectedPermissions.Count)</h6>
+                                        <div class="bg-light p-2 rounded" style="max-height: 200px; overflow-y: auto;">
+                                            @foreach (var permissionId in selectedPermissions.Take(10))
+                                            {
+                                                var permission = allPermissions.FirstOrDefault(p => p.Id == permissionId);
+                                                if (permission != null)
+                                                {
+                                                    <small class="d-block text-muted">@permission.DisplayName</small>
+                                                }
+                                            }
+                                            @if (selectedPermissions.Count > 10)
+                                            {
+                                                <small class="text-muted fst-italic">and @(selectedPermissions.Count - 10) more...</small>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => successMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @successMessage
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div class="toast show" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => errorMessage = string.Empty"></button>
+            </div>
+            <div class="toast-body">
+                @errorMessage
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private CreateRoleDto createRoleDto = new();
+    private List<PermissionGroupDto> permissionGroups = new();
+    private List<PermissionDto> allPermissions = new();
+    private HashSet<int> selectedPermissions = new();
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool allPermissionsSelected = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPermissions();
+    }
+
+    private async Task LoadPermissions()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            permissionGroups = (await PermissionService.GetPermissionsGroupedAsync()).ToList();
+            allPermissions = (await PermissionService.GetAllPermissionsAsync()).ToList();
+            
+            // Set module display names
+            foreach (var group in permissionGroups)
+            {
+                group.ModuleDisplayName = GetModuleDisplayName(group.Module);
+                foreach (var resource in group.Resources)
+                {
+                    resource.ResourceDisplayName = GetResourceDisplayName(resource.Resource);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading permissions: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetModuleDisplayName(string module)
+    {
+        return module switch
+        {
+            "UserManagement" => "User Management",
+            "FacilityManagement" => "Facility Management",
+            "BookingManagement" => "Booking Management",
+            "EventManagement" => "Event Management",
+            "ReportManagement" => "Report Management",
+            "SystemManagement" => "System Management",
+            _ => module
+        };
+    }
+
+    private string GetResourceDisplayName(string resource)
+    {
+        return resource switch
+        {
+            "Users" => "Users",
+            "Roles" => "Roles",
+            "Permissions" => "Permissions",
+            "Facilities" => "Facilities",
+            "Rooms" => "Rooms",
+            "Bookings" => "Bookings",
+            "Events" => "Events",
+            "Reports" => "Reports",
+            "Configuration" => "Configuration",
+            _ => resource
+        };
+    }
+
+    private void TogglePermission(int permissionId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            selectedPermissions.Add(permissionId);
+        }
+        else
+        {
+            selectedPermissions.Remove(permissionId);
+        }
+        
+        UpdateAllPermissionsSelectedState();
+        StateHasChanged();
+    }
+
+    private void ToggleAllPermissions(ChangeEventArgs e)
+    {
+        var selectAll = (bool)(e.Value ?? false);
+        selectedPermissions.Clear();
+        
+        if (selectAll)
+        {
+            selectedPermissions.UnionWith(allPermissions.Select(p => p.Id));
+        }
+        
+        allPermissionsSelected = selectAll;
+        StateHasChanged();
+    }
+
+    private void ToggleModulePermissions(string module)
+    {
+        var modulePermissions = permissionGroups
+            .Where(g => g.Module == module)
+            .SelectMany(g => g.Resources.SelectMany(r => r.Permissions))
+            .Select(p => p.Id)
+            .ToList();
+        
+        var allModulePermissionsSelected = modulePermissions.All(p => selectedPermissions.Contains(p));
+        
+        if (allModulePermissionsSelected)
+        {
+            // Remove all module permissions
+            foreach (var permissionId in modulePermissions)
+            {
+                selectedPermissions.Remove(permissionId);
+            }
+        }
+        else
+        {
+            // Add all module permissions
+            selectedPermissions.UnionWith(modulePermissions);
+        }
+        
+        UpdateAllPermissionsSelectedState();
+        StateHasChanged();
+    }
+
+    private void UpdateAllPermissionsSelectedState()
+    {
+        allPermissionsSelected = allPermissions.Count > 0 && 
+                                 allPermissions.All(p => selectedPermissions.Contains(p.Id));
+    }
+
+    private async Task SubmitCreateRole()
+    {
+        try
+        {
+            isSubmitting = true;
+            StateHasChanged();
+
+            // Validate role name doesn't exist
+            var existingRole = await RoleManagementService.GetRoleByNameAsync(createRoleDto.Name);
+            if (existingRole != null)
+            {
+                errorMessage = $"A role with the name '{createRoleDto.Name}' already exists.";
+                return;
+            }
+
+            var createdRole = await RoleManagementService.CreateRoleAsync(createRoleDto, "Admin"); // TODO: Get current user
+            
+            if (createdRole != null && selectedPermissions.Any())
+            {
+                await RoleManagementService.UpdateRolePermissionsAsync(
+                    createdRole.Id, 
+                    selectedPermissions.ToList(), 
+                    "Admin" // TODO: Get current user
+                );
+            }
+            
+            successMessage = $"Role '{createdRole.Name}' created successfully.";
+            
+            // Clear form
+            createRoleDto = new CreateRoleDto();
+            selectedPermissions.Clear();
+            allPermissionsSelected = false;
+            
+            // Navigate to role details after a short delay
+            await Task.Delay(2000);
+            Navigation.NavigateTo($"/admin/roles/{createdRole.Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error creating role: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/admin/roles");
+    }
+}

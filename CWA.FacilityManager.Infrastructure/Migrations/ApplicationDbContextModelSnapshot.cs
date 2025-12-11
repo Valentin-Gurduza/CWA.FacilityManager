@@ -1473,7 +1473,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "User")
                         .WithMany("AuditLogs")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -1490,7 +1490,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "User")
                         .WithMany("Bookings")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Room");
@@ -1503,7 +1503,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "AssignedUser")
                         .WithMany()
                         .HasForeignKey("AssignedUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedUser");
                 });
@@ -1513,17 +1513,17 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "ApprovedBy")
                         .WithMany()
                         .HasForeignKey("ApprovedById")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("CWA.FacilityManager.Domain.Models.Room", "Room")
                         .WithMany("Events")
                         .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ApprovedBy");
@@ -1557,7 +1557,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.HasOne("CWA.FacilityManager.Domain.Models.Building", "Building")
                         .WithMany("Rooms")
                         .HasForeignKey("BuildingId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Building");
@@ -1568,7 +1568,7 @@ namespace CWA.FacilityManager.Infrastructure.Migrations
                     b.HasOne("CWA.FacilityManager.Domain.Models.ApplicationUser", "User")
                         .WithMany("UserHistories")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");

@@ -208,6 +208,9 @@ builder.Services.AddScoped<IBuildingService, BuildingService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
+// Booking Services
+builder.Services.AddScoped<IBookingService, BookingService>();
+
 // Calendar management
 builder.Services.AddScoped<ICalendarTaskService, CalendarTaskService>();
 

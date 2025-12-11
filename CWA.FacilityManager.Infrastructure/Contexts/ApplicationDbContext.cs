@@ -50,12 +50,12 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasMany(u => u.Bookings)
                     .WithOne(b => b.User)
                     .HasForeignKey(b => b.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict); // Changed from Cascade to Restrict
 
                 entity.HasMany(u => u.UserHistories)
                     .WithOne(h => h.User)
                     .HasForeignKey(h => h.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict); // Changed from Cascade to Restrict
             });
 
             // Configure ApplicationRole
@@ -117,12 +117,12 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasOne(r => r.Building)
                     .WithMany(b => b.Rooms)
                     .HasForeignKey(r => r.BuildingId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict); // Changed from Cascade to Restrict
 
                 entity.HasMany(r => r.Events)
                     .WithOne(e => e.Room)
                     .HasForeignKey(e => e.RoomId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict); // Changed from Cascade to Restrict
             });
 
             // Configure Booking (from User-profile-history)
@@ -208,15 +208,16 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.Property(e => e.Type).HasConversion<string>();
                 entity.Property(e => e.Status).HasConversion<int>();
 
+                // Fixed cascade delete paths
                 entity.HasOne(e => e.CreatedBy)
                     .WithMany()
                     .HasForeignKey(e => e.CreatedById)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.NoAction); // Changed from SetNull to NoAction
 
                 entity.HasOne(e => e.ApprovedBy)
                     .WithMany()
                     .HasForeignKey(e => e.ApprovedById)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.NoAction); // Changed from SetNull to NoAction
                 
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => new { e.RoomId, e.StartDateTime, e.EndDateTime });
@@ -249,7 +250,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasOne(e => e.AssignedUser)
                     .WithMany()
                     .HasForeignKey(e => e.AssignedUserId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.NoAction); // Changed from SetNull to NoAction
 
                 entity.HasIndex(e => e.StartDate);
                 entity.HasIndex(e => e.EndDate);
@@ -273,7 +274,7 @@ namespace CWA.FacilityManager.Infrastructure.Contexts
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.AuditLogs)
                     .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict); // Changed from Cascade to Restrict
 
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.Timestamp);
