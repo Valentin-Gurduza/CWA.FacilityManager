@@ -21,19 +21,6 @@
 
         <AuthorizeView Context="mainAuth" Policy="ActiveUser">
             <Authorized>
-                <!-- User Profile Section (from User-profile-history) -->
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="profile">
-                        <span class="bi bi-person-circle-nav-menu me-2" aria-hidden="true"></span> My Profile
-                    </NavLink>
-                </div>
-
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="history">
-                        <span class="bi bi-clock-history-nav-menu me-2" aria-hidden="true"></span> My History
-                    </NavLink>
-                </div>
-
                 <!-- Basic Facility Access -->
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="rooms">
@@ -53,7 +40,7 @@
                     </NavLink>
                 </div>
 
-                <!-- Task Calendar (from Merge-Test) -->
+                <!-- Task Calendar -->
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="calendar">
                         <span class="bi bi-calendar-nav-menu me-2" aria-hidden="true"></span> Task Calendar
@@ -162,14 +149,19 @@
                 <!-- Profile & Account -->
                 <div class="nav-item px-3 mt-3 pt-3 border-top border-secondary">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu me-2" aria-hidden="true"></span> @mainAuth.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu me-2" aria-hidden="true"></span> Profile
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="history">
+                        <span class="bi bi-clock-history-nav-menu me-2" aria-hidden="true"></span> History
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
+                        <button type="submit" class="nav-link w-100 text-start">
                             <span class="bi bi-arrow-bar-left-nav-menu me-2" aria-hidden="true"></span> Logout
                         </button>
                     </form>

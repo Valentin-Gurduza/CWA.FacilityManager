@@ -17,342 +17,342 @@
 
 <PageTitle>User Management</PageTitle>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">
-                    <i class="bi bi-people-fill me-2 text-primary"></i>User Management
-                </h1>
-                <!-- Only show Add New User button for Administrators -->
-                <AuthorizeView Roles="Administrator" Policy="ActiveAdmin">
-                    <Authorized>
-                        <button class="btn btn-primary" @onclick="OpenCreateUserModal">
-                            <i class="bi bi-person-plus-fill me-2"></i>Add New User
-                        </button>
-                    </Authorized>
-                </AuthorizeView>
+<div class="user-management-page">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-people-fill me-2 text-primary"></i>User Management
+        </h1>
+        <!-- Only show Add New User button for Administrators -->
+        <AuthorizeView Roles="Administrator" Policy="ActiveAdmin">
+            <Authorized>
+                <button class="btn btn-primary" @onclick="OpenCreateUserModal">
+                    <i class="bi bi-person-plus-fill me-2"></i>Add New User
+                </button>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+
+    <!-- Secretary users get a notice about limited access -->
+    <AuthorizeView Roles="Secretary">
+        <Authorized>
+            <div class="alert alert-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <div>
+                        <strong>Secretary Access:</strong> You have view-only access to user information. 
+                        Contact an Administrator for user account modifications.
+                    </div>
+                </div>
             </div>
+        </Authorized>
+    </AuthorizeView>
 
-            <!-- Secretary users get a notice about limited access -->
-            <AuthorizeView Roles="Secretary">
-                <Authorized>
-                    <div class="alert alert-info mb-4">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <div>
-                                <strong>Secretary Access:</strong> You have view-only access to user information. 
-                                Contact an Administrator for user account modifications.
-                            </div>
-                        </div>
-                    </div>
-                </Authorized>
-            </AuthorizeView>
-
-            @if (isLoading)
-            {
-                <div class="text-center p-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <!-- Search and Filter Bar -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="bi bi-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control" placeholder="Search by name, email, or username..." 
-                                           @bind="searchTerm" @onkeypress="OnSearchKeyPress" />
-                                    <button class="btn btn-outline-primary" @onclick="SearchUsers" title="Search Users">
-                                        <i class="bi bi-search me-1"></i>Search
-                                    </button>
-                                    @if (!string.IsNullOrEmpty(searchTerm))
-                                    {
-                                        <button class="btn btn-outline-secondary" @onclick="ClearSearch" title="Clear Search">
-                                            <i class="bi bi-x-circle-fill"></i>
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="bi bi-funnel-fill"></i>
-                                    </span>
-                                    <select class="form-select" @bind="selectedRole" @bind:after="OnRoleFilterChanged">
-                                        <option value="">All Roles</option>
-                                        @foreach (var role in availableRoles)
-                                        {
-                                            <option value="@role.Name">@role.Name</option>
-                                        }
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="bi bi-toggle2-on"></i>
-                                    </span>
-                                    <select class="form-select" @bind="statusFilter" @bind:after="OnStatusFilterChanged">
-                                        <option value="all">All Users</option>
-                                        <option value="active">Active Only</option>
-                                        <option value="inactive">Inactive Only</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Users Table -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Users (@totalUsers)</h5>
-                    </div>
-                    <div class="card-body p-0" style="overflow: visible;">
-                        @if (users.Any())
-                        {
-                            <div class="table-container" style="overflow: visible; position: relative;">
-                                <table class="table table-hover mb-0 table-fixed">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th style="width: 23%;"><i class="bi bi-person-fill"></i> User</th>
-                                            <th style="width: 18%;"><i class="bi bi-envelope-fill"></i> Email</th>
-                                            <th style="width: 15%;"><i class="bi bi-shield-fill"></i> Roles</th>
-                                            <th style="width: 12%;"><i class="bi bi-building-fill"></i> Department</th>
-                                            <th style="width: 8%;"><i class="bi bi-circle-fill"></i> Status</th>
-                                            <th style="width: 10%;"><i class="bi bi-calendar-fill"></i> Created</th>
-                                            <th class="text-end actions-header" style="width: 14%; padding-right: 1rem;"><i class="bi bi-gear-fill"></i> Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var user in users)
-                                        {
-                                            <tr>
-                                                <!-- ...existing user display columns... -->
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
-                                                        {
-                                                            <img src="@user.ProfilePictureUrl" alt="Profile" class="rounded-circle me-2" width="32" height="32" />
-                                                        }
-                                                        else
-                                                        {
-                                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                                                <span class="text-white fw-bold">@GetInitials(user.DisplayName)</span>
-                                                            </div>
-                                                        }
-                                                        <div class="text-truncate-container">
-                                                            <div class="fw-medium text-truncate">@user.DisplayName</div>
-                                                            <small class="text-muted text-truncate">@user.UserName</small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="email-cell">
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="text-truncate">@user.Email</span>
-                                                        @if (user.EmailConfirmed)
-                                                        {
-                                                            <i class="bi bi-check-circle-fill text-success ms-2 email-status-icon" title="Email Confirmed"></i>
-                                                        }
-                                                        else
-                                                        {
-                                                            <i class="bi bi-exclamation-circle-fill text-warning ms-2 email-status-icon" title="Email Not Confirmed"></i>
-                                                        }
-                                                    </div>
-                                                </td>
-                                                <td class="roles-cell">
-                                                    <div class="d-flex align-items-center flex-wrap gap-1">
-                                                        @if (user.Roles.Any())
-                                                        {
-                                                            @foreach (var role in user.Roles.Take(2))
-                                                            {
-                                                                <span class="badge bg-secondary">@role</span>
-                                                            }
-                                                            @if (user.Roles.Count > 2)
-                                                            {
-                                                                <span class="badge bg-light text-dark">+@(user.Roles.Count - 2) more</span>
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="text-muted">No roles</span>
-                                                        }
-                                                    </div>
-                                                </td>
-                                                <td class="text-truncate">@(user.Department ?? "-")</td>
-                                                <td class="status-cell">
-                                                    <div class="d-flex align-items-center flex-wrap gap-1">
-                                                        @if (user.IsActive)
-                                                        {
-                                                            <span class="badge bg-success">Active</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-danger">Inactive</span>
-                                                        }
-                                                        @if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow)
-                                                        {
-                                                            <span class="badge bg-warning">Locked</span>
-                                                        }
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        @user.CreatedAt.ToString("MMM dd, yyyy")
-                                                    </small>
-                                                </td>
-                                                <td class="text-end actions-cell" style="padding-right: 1rem;">
-                                                    <!-- Actions Dropdown with Role-Based Restrictions -->
-                                                    <div class="dropdown actions-dropdown">
-                                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle actions-button" 
-                                                                type="button" 
-                                                                data-bs-toggle="dropdown" 
-                                                                aria-expanded="false" 
-                                                                data-bs-auto-close="true">
-                                                            <i class="bi bi-gear-fill me-1"></i>Actions
-                                                        </button>
-                                                        <ul class="dropdown-menu dropdown-menu-end">
-                                                            <!-- View Details - Available for all users -->
-                                                            <li>
-                                                                <button class="dropdown-item" @onclick="() => ViewUser(user)">
-                                                                    <i class="bi bi-eye-fill me-2 text-primary"></i>View Details
-                                                                </button>
-                                                            </li>
-                                                            
-                                                            <!-- Administrative Actions - Only for Administrators -->
-                                                            <AuthorizeView Roles="Administrator" Policy="ActiveAdmin">
-                                                                <Authorized>
-                                                                    <li>
-                                                                        <button class="dropdown-item" @onclick="() => EditUser(user)">
-                                                                            <i class="bi bi-pencil-fill me-2 text-secondary"></i>Edit Information
-                                                                        </button>
-                                                                    </li>
-                                                                    <li>
-                                                                        <button class="dropdown-item" @onclick="() => ManageUserRoles(user)">
-                                                                            <i class="bi bi-shield-fill-check me-2 text-info"></i>Manage Roles & Permissions
-                                                                        </button>
-                                                                    </li>
-                                                                    <li><hr class="dropdown-divider"></li>
-                                                                    @if (user.IsActive)
-                                                                    {
-                                                                        <li>
-                                                                            <button class="dropdown-item text-warning" @onclick="() => DeactivateUser(user)">
-                                                                                <i class="bi bi-person-dash-fill me-2 text-warning"></i>Deactivate Account
-                                                                            </button>
-                                                                        </li>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <li>
-                                                                            <button class="dropdown-item text-success" @onclick="() => ActivateUser(user)">
-                                                                                <i class="bi bi-person-check-fill me-2 text-success"></i>Activate Account
-                                                                            </button>
-                                                                        </li>
-                                                                    }
-                                                                    <li>
-                                                                        <button class="dropdown-item text-danger" @onclick="() => ResetPassword(user)">
-                                                                            <i class="bi bi-key-fill me-2 text-danger"></i>Reset Password
-                                                                        </button>
-                                                                    </li>
-                                                                </Authorized>
-                                                                <NotAuthorized>
-                                                                    <!-- Secretary users see a note about limited access -->
-                                                                    <li><hr class="dropdown-divider"></li>
-                                                                    <li class="dropdown-item-text text-muted small">
-                                                                        <i class="bi bi-info-circle me-2"></i>Contact Administrator for account modifications
-                                                                    </li>
-                                                                </NotAuthorized>
-                                                            </AuthorizeView>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Pagination -->
-                            @if (totalPages > 1)
+    @if (isLoading)
+    {
+        <div class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Search and Filter Bar -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control" placeholder="Search by name, email, or username..." 
+                                   @bind="searchTerm" @onkeypress="OnSearchKeyPress" />
+                            <button class="btn btn-outline-primary" @onclick="SearchUsers" title="Search Users">
+                                <i class="bi bi-search"></i><span class="d-none d-sm-inline ms-1">Search</span>
+                            </button>
+                            @if (!string.IsNullOrEmpty(searchTerm))
                             {
-                                <div class="card-footer">
-                                    <nav aria-label="User pagination">
-                                        <ul class="pagination pagination-sm justify-content-center mb-0">
-                                            <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
-                                                <button class="page-link" @onclick="() => GoToPage(currentPage - 1)" title="Previous Page">
-                                                    <i class="bi bi-chevron-left"></i> Previous
-                                                </button>
-                                            </li>
-                                            
-                                            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
-                                            {
-                                                <li class="page-item @(i == currentPage ? "active" : "")">
-                                                    <button class="page-link" @onclick="() => GoToPage(i)">@i</button>
-                                                </li>
-                                            }
-                                            
-                                            <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
-                                                <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" title="Next Page">
-                                                    Next <i class="bi bi-chevron-right"></i>
-                                                </button>
-                                            </li>
-                                        </ul>
-                                        
-                                        <div class="text-center mt-2">
-                                            <small class="text-muted">
-                                                <i class="bi bi-info-circle me-1"></i>
-                                                Showing page @currentPage of @totalPages (@totalUsers total users)
-                                            </small>
-                                        </div>
-                                    </nav>
-                                </div>
+                                <button class="btn btn-outline-secondary" @onclick="ClearSearch" title="Clear Search">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                </button>
                             }
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-funnel-fill"></i>
+                            </span>
+                            <select class="form-select" @bind="selectedRole" @bind:after="OnRoleFilterChanged">
+                                <option value="">All Roles</option>
+                                @foreach (var role in availableRoles)
+                                {
+                                    <option value="@role.Name">@role.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-toggle2-on"></i>
+                            </span>
+                            <select class="form-select" @bind="statusFilter" @bind:after="OnStatusFilterChanged">
+                                <option value="all">All Users</option>
+                                <option value="active">Active Only</option>
+                                <option value="inactive">Inactive Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card overflow-visible">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Users (@totalUsers)</h5>
+            </div>
+            <div class="card-body p-0 overflow-visible">
+                @if (users.Any())
+                {
+                    <div class="table-wrapper">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><i class="bi bi-person-fill me-1"></i>User</th>
+                                    <th><i class="bi bi-envelope-fill me-1"></i>Email</th>
+                                    <th><i class="bi bi-shield-fill me-1"></i>Roles</th>
+                                    <th class="d-none d-lg-table-cell"><i class="bi bi-building-fill me-1"></i>Dept</th>
+                                    <th><i class="bi bi-circle-fill me-1"></i>Status</th>
+                                    <th class="d-none d-md-table-cell"><i class="bi bi-calendar-fill me-1"></i>Created</th>
+                                    <th class="text-end" style="width: 100px;"><i class="bi bi-gear-fill me-1"></i>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in users)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                                {
+                                                    <img src="@user.ProfilePictureUrl" alt="Profile" class="rounded-circle me-2 flex-shrink-0" width="32" height="32" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2 flex-shrink-0" style="width: 32px; height: 32px;">
+                                                        <span class="text-white fw-bold small">@GetInitials(user.DisplayName)</span>
+                                                    </div>
+                                                }
+                                                <div class="min-width-0">
+                                                    <div class="fw-medium text-truncate" style="max-width: 120px;">@user.DisplayName</div>
+                                                    <small class="text-muted text-truncate d-block" style="max-width: 120px;">@user.UserName</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="text-truncate" style="max-width: 150px;">@user.Email</span>
+                                                @if (user.EmailConfirmed)
+                                                {
+                                                    <i class="bi bi-check-circle-fill text-success ms-1 flex-shrink-0" title="Email Confirmed"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-exclamation-circle-fill text-warning ms-1 flex-shrink-0" title="Email Not Confirmed"></i>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (user.Roles.Any())
+                                            {
+                                                @foreach (var role in user.Roles.Take(2))
+                                                {
+                                                    <span class="badge bg-secondary me-1">@role</span>
+                                                }
+                                                @if (user.Roles.Count > 2)
+                                                {
+                                                    <span class="badge bg-light text-dark">+@(user.Roles.Count - 2)</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">No roles</span>
+                                            }
+                                        </td>
+                                        <td class="d-none d-lg-table-cell">
+                                            <span class="text-truncate d-inline-block" style="max-width: 80px;">@(user.Department ?? "-")</span>
+                                        </td>
+                                        <td>
+                                            @if (user.IsActive)
+                                            {
+                                                <span class="badge bg-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Inactive</span>
+                                            }
+                                            @if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow)
+                                            {
+                                                <span class="badge bg-warning">Locked</span>
+                                            }
+                                        </td>
+                                        <td class="d-none d-md-table-cell">
+                                            <small class="text-muted">@user.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                        </td>
+                                        <td class="text-end position-relative">
+                                            <div class="btn-group">
+                                                <button class="btn btn-outline-secondary btn-sm" 
+                                                        type="button"
+                                                        @onclick="() => ViewUser(user)"
+                                                        title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <AuthorizeView Roles="Administrator" Policy="ActiveAdmin">
+                                                    <Authorized>
+                                                        <button class="btn btn-outline-secondary btn-sm" 
+                                                                type="button"
+                                                                @onclick="() => EditUser(user)"
+                                                                title="Edit">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-secondary btn-sm" 
+                                                                type="button"
+                                                                @onclick="() => ShowActionsModal(user)"
+                                                                title="More Actions">
+                                                            <i class="bi bi-three-dots-vertical"></i>
+                                                        </button>
+                                                    </Authorized>
+                                                </AuthorizeView>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (totalPages > 1)
+                    {
+                        <div class="card-footer">
+                            <nav aria-label="User pagination">
+                                <ul class="pagination pagination-sm justify-content-center mb-0 flex-wrap">
+                                    <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage - 1)" title="Previous Page">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </button>
+                                    </li>
+                                    
+                                    @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                                    {
+                                        var pageNum = i;
+                                        <li class="page-item @(pageNum == currentPage ? "active" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                                        </li>
+                                    }
+                                    
+                                    <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(currentPage + 1)" title="Next Page">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">
+                                        Page @currentPage of @totalPages (@totalUsers total)
+                                    </small>
+                                </div>
+                            </nav>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center p-5">
+                        <i class="bi bi-people display-1 text-muted"></i>
+                        <h5 class="mt-3">No users found</h5>
+                        <p class="text-muted mb-3">
+                            @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedRole) || statusFilter != "all")
+                            {
+                                <span>No users match your current filters.</span>
+                            }
+                            else
+                            {
+                                <span>There are no users in the system yet.</span>
+                            }
+                        </p>
+                        @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedRole) || statusFilter != "all")
+                        {
+                            <button class="btn btn-outline-primary me-2" @onclick="ClearSearch">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Clear Filters
+                            </button>
+                        }
+                        <AuthorizeView Roles="Administrator" Policy="ActiveAdmin">
+                            <Authorized>
+                                <button class="btn btn-primary" @onclick="OpenCreateUserModal">
+                                    <i class="bi bi-person-plus-fill me-1"></i>Add First User
+                                </button>
+                            </Authorized>
+                        </AuthorizeView>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Actions Modal -->
+@if (showActionsModal && selectedUser != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-gear-fill me-2"></i>Actions for @selectedUser.DisplayName
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseActionsModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" @onclick="() => { ViewUser(selectedUser); CloseActionsModal(); }">
+                            <i class="bi bi-eye-fill me-2"></i>View Details
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="() => { EditUser(selectedUser); CloseActionsModal(); }">
+                            <i class="bi bi-pencil-fill me-2"></i>Edit Information
+                        </button>
+                        <button class="btn btn-outline-info" @onclick="() => { ManageUserRoles(selectedUser); CloseActionsModal(); }">
+                            <i class="bi bi-shield-fill-check me-2"></i>Manage Roles
+                        </button>
+                        <hr />
+                        @if (selectedUser.IsActive)
+                        {
+                            <button class="btn btn-outline-warning" @onclick="() => { DeactivateUser(selectedUser); CloseActionsModal(); }">
+                                <i class="bi bi-person-dash-fill me-2"></i>Deactivate Account
+                            </button>
                         }
                         else
                         {
-                            <div class="text-center p-5">
-                                <i class="bi bi-people display-1 text-muted"></i>
-                                <h5 class="mt-3">No users found</h5>
-                                <p class="text-muted mb-3">
-                                    @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedRole) || statusFilter != "all")
-                                    {
-                                        <span>No users match your current filters.</span>
-                                    }
-                                    else
-                                    {
-                                        <span>There are no users in the system yet.</span>
-                                    }
-                                </p>
-                                @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedRole) || statusFilter != "all")
-                                {
-                                    <button class="btn btn-outline-primary me-2" @onclick="ClearSearch">
-                                        <i class="bi bi-arrow-clockwise me-1"></i>Clear Filters
-                                    </button>
-                                }
-                                <!-- Only show Add First User for Administrators -->
-                                <AuthorizeView Roles="Administrator" Policy="ActiveAdmin">
-                                    <Authorized>
-                                        <button class="btn btn-primary" @onclick="OpenCreateUserModal">
-                                            <i class="bi bi-person-plus-fill me-1"></i>Add First User
-                                        </button>
-                                    </Authorized>
-                                </AuthorizeView>
-                            </div>
+                            <button class="btn btn-outline-success" @onclick="() => { ActivateUser(selectedUser); CloseActionsModal(); }">
+                                <i class="bi bi-person-check-fill me-2"></i>Activate Account
+                            </button>
                         }
+                        <button class="btn btn-outline-danger" @onclick="() => { ResetPassword(selectedUser); CloseActionsModal(); }">
+                            <i class="bi bi-key-fill me-2"></i>Reset Password
+                        </button>
                     </div>
                 </div>
-            }
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseActionsModal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+}
 
 <!-- Success/Error Messages -->
 @if (!string.IsNullOrEmpty(successMessage))
@@ -396,6 +396,10 @@
     private string statusFilter = "all";
     private string successMessage = string.Empty;
     private string errorMessage = string.Empty;
+    
+    // Modal state
+    private bool showActionsModal = false;
+    private UserDto? selectedUser;
 
     // Pagination
     private int currentPage = 1;
@@ -456,6 +460,18 @@
         }
     }
 
+    private void ShowActionsModal(UserDto user)
+    {
+        selectedUser = user;
+        showActionsModal = true;
+    }
+
+    private void CloseActionsModal()
+    {
+        showActionsModal = false;
+        selectedUser = null;
+    }
+
     private async Task SearchUsers()
     {
         currentPage = 1;
@@ -503,7 +519,7 @@
     {
         try
         {
-            var result = await UserManagementService.ActivateUserAsync(user.Id, "System"); // In real app, use current user
+            var result = await UserManagementService.ActivateUserAsync(user.Id, "System");
             if (result)
             {
                 successMessage = $"User {user.DisplayName} has been activated.";
@@ -523,16 +539,16 @@
     private async Task DeactivateUser(UserDto user)
     {
         var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
-            $"Are you sure you want to deactivate {user.DisplayName}? This will prevent them from logging in and force them to sign out immediately.");
+            $"Are you sure you want to deactivate {user.DisplayName}? This will prevent them from logging in.");
         
         if (confirmed)
         {
             try
             {
-                var result = await UserManagementService.DeactivateUserAsync(user.Id, "System"); // In real app, use current user
+                var result = await UserManagementService.DeactivateUserAsync(user.Id, "System");
                 if (result)
                 {
-                    successMessage = $"User {user.DisplayName} has been deactivated and will be signed out automatically.";
+                    successMessage = $"User {user.DisplayName} has been deactivated.";
                     await LoadData();
                 }
                 else
@@ -550,19 +566,17 @@
     private async Task ResetPassword(UserDto user)
     {
         var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
-            $"Are you sure you want to reset the password for {user.DisplayName}? A secure email will be sent with password reset instructions.");
+            $"Are you sure you want to reset the password for {user.DisplayName}?");
         
         if (confirmed)
         {
             try
             {
-                // Generate a secure temporary password
                 var tempPassword = GenerateSecureTemporaryPassword();
                 var result = await UserManagementService.ResetPasswordAsync(user.Id, tempPassword, "System");
                 
                 if (result)
                 {
-                    // Try to send email with the new password
                     try
                     {
                         var subject = "Your Password Has Been Reset - CWA Facility Manager";
@@ -571,37 +585,19 @@
                             <body>
                                 <h2>Password Reset Notification</h2>
                                 <p>Dear {user.DisplayName},</p>
-                                <p>Your password for the CWA Facility Manager system has been reset by an administrator.</p>
-                                <p><strong>Your new temporary password is:</strong> <code>{tempPassword}</code></p>
-                                <p><strong>Important Security Instructions:</strong></p>
-                                <ul>
-                                    <li>Please log in and change this password immediately</li>
-                                    <li>Do not share this password with anyone</li>
-                                    <li>This password is case-sensitive</li>
-                                    <li>For security reasons, this email will not be sent again</li>
-                                </ul>
-                                <p>If you did not request this password reset, please contact your system administrator immediately.</p>
-                                <p>Best regards,<br/>CWA Facility Manager System</p>
+                                <p>Your password has been reset by an administrator.</p>
+                                <p><strong>New temporary password:</strong> <code>{tempPassword}</code></p>
+                                <p>Please log in and change this password immediately.</p>
                             </body>
                             </html>";
 
                         await EmailSender.SendEmailAsync(user.Email!, subject, message);
-                        successMessage = $"Password has been reset for {user.DisplayName}. A secure email has been sent with the new password.";
+                        successMessage = $"Password reset for {user.DisplayName}. Email sent with new password.";
                     }
                     catch (Exception emailEx)
                     {
-                        // If email fails, show the password securely in the UI as a fallback
-                        errorMessage = $"Password was reset but email failed to send. Please contact {user.DisplayName} directly. Email error: {emailEx.Message}";
-                        
-                        // Still show success for password reset, but warn about email
                         await JSRuntime.InvokeVoidAsync("alert", 
-                            $"PASSWORD RESET SUCCESSFUL\n\n" +
-                            $"User: {user.DisplayName}\n" +
-                            $"Email: {user.Email}\n" +
-                            $"Temporary Password: {tempPassword}\n\n" +
-                            $"⚠️ Email delivery failed. Please securely communicate this password to the user.\n" +
-                            $"📧 Email Error: {emailEx.Message}\n\n" +
-                            $"⚠️ IMPORTANT: Ask the user to change this password immediately after login.");
+                            $"Password Reset Successful\n\nTemporary Password: {tempPassword}\n\nEmail failed: {emailEx.Message}");
                     }
                 }
                 else
@@ -639,47 +635,15 @@
 
     private string GenerateSecureTemporaryPassword()
     {
-        // Generate a cryptographically secure 16-character password
-        const string upperChars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        const string lowerChars = "abcdefghijklmnpqrstuvwxyz";
-        const string numberChars = "23456789";
-        const string specialChars = "!@#$%^&*";
-        
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*";
         var random = new Random();
-        var password = new char[16];
-        
-        // Ensure at least one character from each category
-        password[0] = upperChars[random.Next(upperChars.Length)];
-        password[1] = lowerChars[random.Next(lowerChars.Length)];
-        password[2] = numberChars[random.Next(numberChars.Length)];
-        password[3] = specialChars[random.Next(specialChars.Length)];
-        
-        // Fill the rest with random characters from all categories
-        const string allChars = upperChars + lowerChars + numberChars + specialChars;
-        for (int i = 4; i < 16; i++)
-        {
-            password[i] = allChars[random.Next(allChars.Length)];
-        }
-        
-        // Shuffle the password to avoid predictable patterns
-        for (int i = password.Length - 1; i > 0; i--)
-        {
-            int j = random.Next(i + 1);
-            (password[i], password[j]) = (password[j], password[i]);
-        }
-        
-        return new string(password);
+        return new string(Enumerable.Repeat(chars, 16).Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
     private string GetInitials(string displayName)
     {
         if (string.IsNullOrEmpty(displayName)) return "??";
-        
         var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length >= 2)
-        {
-            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
-        }
-        return parts[0][0].ToString().ToUpper();
+        return parts.Length >= 2 ? $"{parts[0][0]}{parts[1][0]}".ToUpper() : parts[0][0].ToString().ToUpper();
     }
 }

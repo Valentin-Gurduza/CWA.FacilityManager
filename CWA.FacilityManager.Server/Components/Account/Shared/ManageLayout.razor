@@ -1,17 +1,169 @@
 ﻿@inherits LayoutComponentBase
 @layout CWA.FacilityManager.Server.Components.Layout.MainLayout
 
-<h1>Manage your account</h1>
+<div class="manage-account-container">
+    <div class="manage-header mb-4">
+        <div class="d-flex align-items-center">
+            <div class="page-icon me-3">
+                <span class="bi bi-person-gear"></span>
+            </div>
+            <div>
+                <h1 class="page-title mb-0">Manage Account</h1>
+                <p class="page-subtitle text-muted mb-0">Update your profile and account settings</p>
+            </div>
+        </div>
+    </div>
 
-<div>
-    <h2>Change your account settings</h2>
-    <hr />
     <div class="row">
-        <div class="col-lg-3">
-            <ManageNavMenu />
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-body p-0">
+                    <ManageNavMenu />
+                </div>
+            </div>
         </div>
         <div class="col-lg-9">
             @Body
         </div>
     </div>
 </div>
+
+<style>
+    .manage-account-container {
+        max-width: 100%;
+    }
+
+    .manage-header {
+        padding: 1.5rem 0;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+        margin-bottom: 2rem;
+    }
+
+    .page-icon {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 0.875rem;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary, #f8fafc);
+    }
+
+    .page-subtitle {
+        font-size: 0.9375rem;
+        color: var(--text-muted, #94a3b8);
+    }
+
+    /* Profile Overview Card */
+    .profile-overview-card {
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-overview-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa, #22d3ee);
+    }
+
+    .avatar-circle {
+        width: 5rem;
+        height: 5rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+    }
+
+    .profile-avatar {
+        position: relative;
+        display: inline-block;
+    }
+
+    .avatar-status {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        border: 3px solid var(--card-bg, #1a2340);
+    }
+
+    .avatar-status.online {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary, #f8fafc);
+    }
+
+    .role-card {
+        background: rgba(0, 0, 0, 0.1);
+        transition: all 0.25s ease;
+    }
+
+    .role-card:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+
+    .detail-icon {
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .permissions-section {
+        background: rgba(99, 102, 241, 0.05) !important;
+    }
+
+    .permission-module {
+        background: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    @@media (max-width: 992px) {
+        .manage-header {
+            padding: 1rem 0;
+        }
+
+        .page-icon {
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.25rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>

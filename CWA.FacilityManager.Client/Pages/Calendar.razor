@@ -171,9 +171,9 @@
                                             var cellDate = GetCalendarCellDate(week, day);
                                             var dayTasks = GetTasksForDate(cellDate);
                                             var isCurrentMonth = cellDate.Month == currentDate.Month;
+                                            var isToday = cellDate.Date == DateTime.Today;
 
-                                            <div class="col border p-2 calendar-cell @(isCurrentMonth ? "" : "text-muted")" 
-                                                 style="min-height: 120px; @(cellDate.Date == DateTime.Today ? "background-color: #e3f2fd;" : "")">
+                                            <div class="col border p-2 calendar-cell @(isCurrentMonth ? "" : "text-muted") @(isToday ? "today" : "")">
                                                 <div class="fw-bold">@cellDate.Day</div>
                                                 @foreach (var task in dayTasks.Take(3))
                                                 {
@@ -184,7 +184,7 @@
                                                         <div class="task-title">@task.Title</div>
                                                         @if (!string.IsNullOrEmpty(task.AssignedUserName))
                                                         {
-                                                            <div class="task-user" style="font-size: 0.6rem; opacity: 0.8;">@task.AssignedUserName</div>
+                                                            <div class="task-user">@task.AssignedUserName</div>
                                                         }
                                                     </div>
                                                 }
@@ -891,43 +891,3 @@
         StateHasChanged();
     }
 }
-
-<style>
-    .calendar-cell {
-        min-height: 120px;
-    }
-
-    .task-item {
-        font-size: 0.75rem;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.3);
-        overflow: hidden;
-    }
-
-    .task-title {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .task-user {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .calendar-grid .row {
-        margin: 0;
-    }
-
-    .calendar-grid .col {
-        padding: 0;
-    }
-
-    .position-fixed {
-        position: fixed !important;
-    }
-
-    .overlapping-task {
-        border: 2px solid #ffc107 !important;
-    }
-</style>

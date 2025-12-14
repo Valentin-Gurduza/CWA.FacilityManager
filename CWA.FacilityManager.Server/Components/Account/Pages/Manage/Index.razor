@@ -2,75 +2,469 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
+@using CWA.FacilityManager.Shared.DTOs
+@using CWA.FacilityManager.Application.Interfaces
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
+@inject IUserProfileService UserProfileService
 
-<PageTitle>Profile</PageTitle>
+<PageTitle>Profile - CWA Facility Manager</PageTitle>
 
-<h3>Profile</h3>
-<StatusMessage />
-
-<div class="row">
-    <div class="col-xl-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" id="username" class="form-control" placeholder="Choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
-            </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
-                <label for="Input.PhoneNumber" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
-        </EditForm>
+@if (isLoading)
+{
+    <div class="loading-container text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted">Loading your profile...</p>
     </div>
-</div>
+}
+else if (profile != null)
+{
+    <div class="row g-4">
+        <!-- Profile Overview Card -->
+        <div class="col-lg-4">
+            <div class="card profile-overview-card">
+                <div class="card-body text-center">
+                    <div class="profile-avatar mb-4">
+                        <div class="avatar-circle mx-auto">
+                            <span class="bi bi-person-fill"></span>
+                        </div>
+                    </div>
+                    
+                    <h3 class="profile-name">@profile.FullName</h3>
+                    <p class="profile-email text-muted mb-3">@profile.Email</p>
+                    
+                    <div class="profile-badges mb-3">
+                        @foreach (var role in profile.DetailedRoles.Take(2))
+                        {
+                            <span class="badge bg-@GetRoleBadgeColor(role.RoleType) me-1">
+                                <span class="bi bi-shield-check me-1"></span>
+                                @role.RoleName
+                            </span>
+                        }
+                        @if (profile.DetailedRoles.Count > 2)
+                        {
+                            <span class="badge bg-secondary">+@(profile.DetailedRoles.Count - 2) more</span>
+                        }
+                    </div>
+
+                    <div class="profile-stats">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="stat-item p-3 rounded bg-primary bg-opacity-10">
+                                    <div class="stat-value h4 mb-1 text-primary">@profile.DetailedRoles.Count</div>
+                                    <div class="stat-label small text-muted">Roles</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item p-3 rounded bg-primary bg-opacity-10">
+                                    <div class="stat-value h4 mb-1 text-primary">@((DateTime.Now - profile.CreatedAt).Days)</div>
+                                    <div class="stat-label small text-muted">Days Active</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Details Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <span class="bi bi-info-circle me-2"></span>
+                        Profile Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-list">
+                        <div class="detail-item d-flex align-items-center mb-3">
+                            <div class="detail-icon me-3">
+                                <span class="bi bi-building text-primary"></span>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label small text-muted">Department</div>
+                                <div class="detail-value">@(profile.Department ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item d-flex align-items-center mb-3">
+                            <div class="detail-icon me-3">
+                                <span class="bi bi-briefcase text-primary"></span>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label small text-muted">Position</div>
+                                <div class="detail-value">@(profile.Position ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item d-flex align-items-center mb-3">
+                            <div class="detail-icon me-3">
+                                <span class="bi bi-telephone text-primary"></span>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label small text-muted">Phone</div>
+                                <div class="detail-value">@(profile.PhoneNumber ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item d-flex align-items-center mb-3">
+                            <div class="detail-icon me-3">
+                                <span class="bi bi-calendar-plus text-primary"></span>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label small text-muted">Member Since</div>
+                                <div class="detail-value">@profile.CreatedAt.ToString("MMMM yyyy")</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item d-flex align-items-center">
+                            <div class="detail-icon me-3">
+                                <span class="bi bi-clock-history text-primary"></span>
+                            </div>
+                            <div class="detail-content">
+                                <div class="detail-label small text-muted">Last Login</div>
+                                <div class="detail-value">@(profile.LastLoginAt?.ToString("MMM dd, yyyy HH:mm") ?? "Never")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-lg-8">
+            <!-- Edit Profile Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <span class="bi bi-pencil-square me-2"></span>
+                        Edit Profile Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@Input" FormName="update-profile" OnValidSubmit="@UpdateProfile" method="post">
+                        <DataAnnotationsValidator />
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert alert-@(isSuccess ? "success" : "danger") alert-dismissible fade show" role="alert">
+                                <span class="bi bi-@(isSuccess ? "check-circle" : "exclamation-triangle") me-2"></span>
+                                @message
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="firstName" class="form-label">
+                                    <span class="bi bi-person me-2"></span>First Name
+                                </label>
+                                <InputText id="firstName" class="form-control" @bind-Value="Input.FirstName" placeholder="Enter first name" />
+                                <ValidationMessage For="() => Input.FirstName" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lastName" class="form-label">
+                                    <span class="bi bi-person me-2"></span>Last Name
+                                </label>
+                                <InputText id="lastName" class="form-control" @bind-Value="Input.LastName" placeholder="Enter last name" />
+                                <ValidationMessage For="() => Input.LastName" class="text-danger small" />
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label for="department" class="form-label">
+                                    <span class="bi bi-building me-2"></span>Department
+                                </label>
+                                <InputText id="department" class="form-control" @bind-Value="Input.Department" placeholder="Enter department" />
+                                <ValidationMessage For="() => Input.Department" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="position" class="form-label">
+                                    <span class="bi bi-briefcase me-2"></span>Position
+                                </label>
+                                <InputText id="position" class="form-control" @bind-Value="Input.Position" placeholder="Enter position" />
+                                <ValidationMessage For="() => Input.Position" class="text-danger small" />
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label for="phoneNumber" class="form-label">
+                                <span class="bi bi-telephone me-2"></span>Phone Number
+                            </label>
+                            <InputText id="phoneNumber" class="form-control" @bind-Value="Input.PhoneNumber" placeholder="Enter phone number" />
+                            <ValidationMessage For="() => Input.PhoneNumber" class="text-danger small" />
+                        </div>
+
+                        <div class="mt-3">
+                            <label for="bio" class="form-label">
+                                <span class="bi bi-chat-quote me-2"></span>Bio
+                            </label>
+                            <InputTextArea id="bio" class="form-control" style="height: 120px" @bind-Value="Input.Bio" placeholder="Tell us about yourself" />
+                            <ValidationMessage For="() => Input.Bio" class="text-danger small" />
+                        </div>
+
+                        <div class="d-flex gap-3 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary flex-fill">
+                                <span class="bi bi-check-lg me-2"></span>
+                                <span>Update Profile</span>
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+
+            <!-- Roles & Permissions Card -->
+            @if (profile.DetailedRoles.Any())
+            {
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <span class="bi bi-shield-check me-2"></span>
+                            Roles & Permissions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="roles-list">
+                            @foreach (var role in profile.DetailedRoles)
+                            {
+                                <div class="role-card p-3 mb-3 rounded border">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="role-info">
+                                            <h6 class="role-name mb-1">
+                                                <span class="badge bg-@GetRoleBadgeColor(role.RoleType) me-2">
+                                                    @role.RoleName
+                                                </span>
+                                                @if (role.IsSystemRole)
+                                                {
+                                                    <span class="badge bg-secondary">System Role</span>
+                                                }
+                                            </h6>
+                                            @if (!string.IsNullOrEmpty(role.Description))
+                                            {
+                                                <p class="role-description text-muted small mb-0">@role.Description</p>
+                                            }
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary" type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#role-details-@role.RoleId">
+                                            <span class="bi bi-chevron-down"></span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="collapse" id="role-details-@role.RoleId">
+                                        <div class="role-details mt-3 pt-3 border-top">
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-sm-6 col-md-3">
+                                                    <div class="small text-muted">Assigned</div>
+                                                    <div>@role.AssignedAt.ToString("MMM dd, yyyy")</div>
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(role.AssignedBy))
+                                                {
+                                                    <div class="col-sm-6 col-md-3">
+                                                        <div class="small text-muted">By</div>
+                                                        <div>@role.AssignedBy</div>
+                                                    </div>
+                                                }
+                                                <div class="col-sm-6 col-md-3">
+                                                    <div class="small text-muted">Priority</div>
+                                                    <div>@role.Priority</div>
+                                                </div>
+                                                @if (role.ExpiresAt.HasValue)
+                                                {
+                                                    <div class="col-sm-6 col-md-3">
+                                                        <div class="small text-muted">Expires</div>
+                                                        <div>@role.ExpiresAt.Value.ToString("MMM dd, yyyy")</div>
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            @if (role.Permissions.Any())
+                                            {
+                                                <div class="permissions-section p-3 rounded bg-body-tertiary">
+                                                    <h6 class="permissions-title mb-3">
+                                                        <span class="bi bi-key me-2"></span>
+                                                        Permissions (@role.Permissions.Count)
+                                                    </h6>
+                                                    @foreach (var moduleGroup in role.Permissions.GroupBy(p => p.Module))
+                                                    {
+                                                        <div class="permission-module mb-2 p-2 rounded">
+                                                            <div class="module-header fw-semibold text-primary mb-2">
+                                                                <span class="bi bi-@GetPermissionIcon(moduleGroup.Key) me-2"></span>
+                                                                @moduleGroup.Key
+                                                            </div>
+                                                            <div class="module-permissions">
+                                                                @foreach (var resourceGroup in moduleGroup.GroupBy(p => p.Resource))
+                                                                {
+                                                                    <div class="resource-permissions d-flex flex-wrap align-items-center gap-2 mb-1">
+                                                                        <span class="resource-name small text-muted">@resourceGroup.Key:</span>
+                                                                        @foreach (var permission in resourceGroup)
+                                                                        {
+                                                                            <span class="badge bg-primary bg-opacity-10 text-primary" title="@permission.Description">
+                                                                                @permission.Action
+                                                                            </span>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <span class="bi bi-exclamation-triangle-fill me-2"></span>
+        @errorMessage
+        <button class="btn btn-sm btn-outline-danger ms-3" @onclick="LoadProfile">
+            <span class="bi bi-arrow-clockwise me-2"></span>Try Again
+        </button>
+    </div>
+}
 
 @code {
-    private ApplicationUser user = default!;
-    private string? username;
-    private string? phoneNumber;
+    private UserProfileDto? profile;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? message;
+    private bool isSuccess;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
-    [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = new();
+    [SupplyParameterFromForm(FormName = "update-profile")]
+    private UpdateUserProfileDto Input { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
-        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        username = await UserManager.GetUserNameAsync(user);
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
-
-        Input.PhoneNumber ??= phoneNumber;
+        await LoadProfile();
     }
 
-    private async Task OnValidSubmitAsync()
+    private async Task LoadProfile()
     {
-        if (Input.PhoneNumber != phoneNumber)
+        try
         {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
+            isLoading = true;
+            errorMessage = null;
+            
+            var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+            var userId = user.Id;
+            
+            if (!string.IsNullOrEmpty(userId))
             {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+                profile = await UserProfileService.GetUserProfileAsync(userId);
+                if (profile != null)
+                {
+                    // Only populate Input if it's not already populated from form submission
+                    if (string.IsNullOrEmpty(Input.FirstName) && string.IsNullOrEmpty(Input.LastName))
+                    {
+                        Input.FirstName = profile.FirstName;
+                        Input.LastName = profile.LastName;
+                        Input.PhoneNumber = profile.PhoneNumber;
+                        Input.Bio = profile.Bio;
+                        Input.Department = profile.Department;
+                        Input.Position = profile.Position;
+                    }
+                }
+                else
+                {
+                    errorMessage = "Profile not found.";
+                }
+            }
+            else
+            {
+                errorMessage = "User not authenticated.";
             }
         }
-
-        await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading profile: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private sealed class InputModel
+    private async Task UpdateProfile()
     {
-        [Phone]
-        [Display(Name = "Phone number")]
-        public string? PhoneNumber { get; set; }
+        try
+        {
+            message = null;
+            
+            var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+            var userId = user.Id;
+            
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var success = await UserProfileService.UpdateUserProfileAsync(userId, Input);
+                
+                if (success)
+                {
+                    message = "Profile updated successfully!";
+                    isSuccess = true;
+                    
+                    // Reload profile to show updated data
+                    profile = await UserProfileService.GetUserProfileAsync(userId);
+                    
+                    await SignInManager.RefreshSignInAsync(user);
+                }
+                else
+                {
+                    message = "Failed to update profile.";
+                    isSuccess = false;
+                }
+            }
+            else
+            {
+                message = "User not authenticated.";
+                isSuccess = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"Error updating profile: {ex.Message}";
+            isSuccess = false;
+        }
+    }
+
+    private string GetRoleBadgeColor(string roleType)
+    {
+        return roleType.ToLower() switch
+        {
+            "administrator" => "danger",
+            "secretary" => "warning",
+            "renter" => "primary",
+            _ => "secondary"
+        };
+    }
+
+    private string GetPermissionIcon(string module)
+    {
+        return module.ToLower() switch
+        {
+            "usermanagement" => "people",
+            "facilitymanagement" => "building",
+            "eventmanagement" => "calendar-event",
+            "bookingmanagement" => "calendar-check",
+            "reportmanagement" => "bar-chart",
+            "systemmanagement" => "gear",
+            _ => "key"
+        };
     }
 }

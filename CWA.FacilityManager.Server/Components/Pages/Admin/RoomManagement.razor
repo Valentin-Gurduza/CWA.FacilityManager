@@ -3,464 +3,427 @@
 @using CWA.FacilityManager.Domain.Models
 @using CWA.FacilityManager.Domain.Enums
 @using CWA.FacilityManager.Application.Interfaces
-@using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize(Policy = "ActiveAdminOrSecretary")]
 @rendermode InteractiveServer
 @inject IRoomService RoomService
 @inject IBuildingService BuildingService
-@inject IBookingService BookingService
 @inject IJSRuntime JS
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
 
 <PageTitle>Room Management</PageTitle>
 
-<AuthorizeView Policy="ActiveAdminOrSecretary">
-    <Authorized>
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1 class="h3">
-                            <i class="fas fa-door-open me-2 text-primary"></i>Room Management
-                        </h1>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-info" @onclick="ViewAllSchedules" disabled="@isProcessing">
-                                <i class="fas fa-calendar-week me-2"></i>View All Schedules
-                            </button>
-                            <button class="btn btn-primary" @onclick="ShowAddRoomModal">
-                                <i class="fas fa-plus me-2"></i>Add New Room
-                            </button>
-                        </div>
-                    </div>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">
+            <i class="fas fa-door-open me-2 text-primary"></i>Room Management
+        </h1>
+        <button class="btn btn-primary" @onclick="ShowAddRoomModal">
+            <i class="fas fa-plus me-2"></i>Add New Room
+        </button>
+    </div>
 
-                    <!-- Room Statistics -->
-                    <div class="row mb-4">
-                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                            <div class="card text-center bg-light">
-                                <div class="card-body py-3">
-                                    <i class="fas fa-door-open text-primary" style="font-size: 2rem;"></i>
-                                    <h4 class="mt-2 mb-0">@(rooms?.Count() ?? 0)</h4>
-                                    <small class="text-muted">Total Rooms</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                            <div class="card text-center bg-light">
-                                <div class="card-body py-3">
-                                    <i class="fas fa-check-circle text-success" style="font-size: 2rem;"></i>
-                                    <h4 class="mt-2 mb-0">@(rooms?.Count(r => r.IsActive && r.IsAvailable) ?? 0)</h4>
-                                    <small class="text-muted">Available</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                            <div class="card text-center bg-light">
-                                <div class="card-body py-3">
-                                    <i class="fas fa-calendar-alt text-info" style="font-size: 2rem;"></i>
-                                    <h4 class="mt-2 mb-0">@todayBookings</h4>
-                                    <small class="text-muted">Booked Today</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                            <div class="card text-center bg-light">
-                                <div class="card-body py-3">
-                                    <i class="fas fa-tools text-warning" style="font-size: 2rem;"></i>
-                                    <h4 class="mt-2 mb-0">@(rooms?.Count(r => !r.IsActive) ?? 0)</h4>
-                                    <small class="text-muted">Inactive</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                            <div class="card text-center bg-light">
-                                <div class="card-body py-3">
-                                    <i class="fas fa-users text-secondary" style="font-size: 2rem;"></i>
-                                    <h4 class="mt-2 mb-0">@(rooms?.Sum(r => r.Capacity) ?? 0)</h4>
-                                    <small class="text-muted">Total Capacity</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
-                            <div class="card text-center bg-light">
-                                <div class="card-body py-3">
-                                    <i class="fas fa-building text-info" style="font-size: 2rem;"></i>
-                                    <h4 class="mt-2 mb-0">@(buildings?.Count() ?? 0)</h4>
-                                    <small class="text-muted">Facilities</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Status Messages -->
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(statusMessageType == "success" ? "alert-success" : "alert-danger") alert-dismissible fade show">
+            <i class="fas @(statusMessageType == "success" ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>
+            @statusMessage
+            <button type="button" class="btn-close" @onclick="ClearStatusMessage"></button>
+        </div>
+    }
 
-                    <!-- Status Messages -->
-                    @if (!string.IsNullOrEmpty(statusMessage))
-                    {
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="alert @(statusMessageType == "success" ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
-                                    <i class="fas @(statusMessageType == "success" ? "fa-check-circle" : "fa-exclamation-triangle")"></i>
-                                    @statusMessage
-                                    <button type="button" class="btn-close" @onclick="ClearStatusMessage"></button>
-                                </div>
-                            </div>
-                        </div>
-                    }
+    <!-- Room Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center bg-light">
+                <div class="card-body py-3">
+                    <i class="fas fa-door-open text-primary" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2 mb-0">@(rooms?.Count() ?? 0)</h4>
+                    <small class="text-muted">Total Rooms</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center bg-light">
+                <div class="card-body py-3">
+                    <i class="fas fa-check-circle text-success" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2 mb-0">@(rooms?.Count(r => r.IsActive && r.IsAvailable) ?? 0)</h4>
+                    <small class="text-muted">Available</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center bg-light">
+                <div class="card-body py-3">
+                    <i class="fas fa-tools text-warning" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2 mb-0">@(rooms?.Count(r => !r.IsActive) ?? 0)</h4>
+                    <small class="text-muted">Inactive</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center bg-light">
+                <div class="card-body py-3">
+                    <i class="fas fa-users text-info" style="font-size: 2rem;"></i>
+                    <h4 class="mt-2 mb-0">@(rooms?.Sum(r => r.Capacity) ?? 0)</h4>
+                    <small class="text-muted">Total Capacity</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <!-- Filters and Search -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="fas fa-search"></i>
-                                        </span>
-                                        <input type="text" class="form-control" placeholder="Search rooms..." @bind="searchTerm" @bind:after="ApplyFilters" />
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <select class="form-select" @bind="buildingFilter" @bind:after="ApplyFilters">
-                                        <option value="">All Facilities</option>
-                                        @if (buildings != null)
-                                        {
-                                            @foreach (var building in buildings)
-                                            {
-                                                <option value="@building.Id">@building.Name</option>
-                                            }
-                                        }
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <select class="form-select" @bind="activityFilter" @bind:after="ApplyFilters">
-                                        <option value="">All Types</option>
-                                        <option value="@ActivityType.Course">Course</option>
-                                        <option value="@ActivityType.Meeting">Meeting</option>
-                                        <option value="@ActivityType.Training">Training</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <select class="form-select" @bind="statusFilter" @bind:after="ApplyFilters">
-                                        <option value="">All Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="available">Available</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <input type="number" class="form-control" placeholder="Min capacity" min="1" @bind="minCapacityFilter" @bind:after="ApplyFilters" />
-                                </div>
-                                <div class="col-md-1">
-                                    <button class="btn btn-outline-primary w-100" @onclick="ResetFilters">
-                                        <i class="fas fa-undo"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rooms Table -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Rooms (@(filteredRooms?.Count() ?? 0))</h5>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <input type="radio" class="btn-check" name="viewOptions" id="tableView" autocomplete="off" checked @onchange="@(() => viewMode = "table")">
-                                    <label class="btn btn-outline-secondary" for="tableView">
-                                        <i class="fas fa-table"></i> Table
-                                    </label>
-                                    <input type="radio" class="btn-check" name="viewOptions" id="cardView" autocomplete="off" @onchange="@(() => viewMode = "card")">
-                                    <label class="btn btn-outline-secondary" for="cardView">
-                                        <i class="fas fa-th"></i> Cards
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            @if (filteredRooms == null)
-                            {
-                                <div class="text-center py-5">
-                                    <div class="spinner-border" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
-                            }
-                            else if (!filteredRooms.Any())
-                            {
-                                <div class="text-center py-5">
-                                    <i class="fas fa-door-open fa-4x text-muted mb-3"></i>
-                                    <h5>No Rooms Found</h5>
-                                    <p class="text-muted">
-                                        @if (HasActiveFilters())
-                                        {
-                                            <span>No rooms match your current filters.</span>
-                                        }
-                                        else
-                                        {
-                                            <span>Start by adding your first room to the system!</span>
-                                        }
-                                    </p>
-                                    @if (!HasActiveFilters())
-                                    {
-                                        <button class="btn btn-primary" @onclick="ShowAddRoomModal">
-                                            <i class="fas fa-plus me-2"></i> Add Your First Room
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-outline-primary" @onclick="ResetFilters">
-                                            <i class="fas fa-undo me-2"></i> Clear Filters
-                                        </button>
-                                    }
-                                </div>
-                            }
-                            else if (viewMode == "table")
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Room Name</th>
-                                                <th>Facility</th>
-                                                <th>Type</th>
-                                                <th>Capacity</th>
-                                                <th>Status</th>
-                                                <th>Next Booking</th>
-                                                <th class="text-end">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var room in filteredRooms.Take(pageSize))
-                                            {
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="bg-primary rounded d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                                                <i class="fas fa-door-open text-white"></i>
-                                                            </div>
-                                                            <div>
-                                                                <div class="fw-medium">@room.Name</div>
-                                                                @if (!string.IsNullOrEmpty(room.RoomNumber))
-                                                                {
-                                                                    <small class="text-muted">Room @room.RoomNumber</small>
-                                                                }
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>@room.Building?.Name</td>
-                                                    <td>
-                                                        <span class="badge @GetActivityBadgeClass(room.Activity)">
-                                                            <i class="fas @GetActivityIcon(room.Activity) me-1"></i>@room.Activity
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <i class="fas fa-users me-1"></i>@room.Capacity
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge @GetStatusBadgeClass(room)">
-                                                            <i class="fas @GetStatusIcon(room) me-1"></i>@GetStatusText(room)
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        @* TODO: Implement next booking logic *@
-                                                        <small class="text-muted">
-                                                            Available
-                                                        </small>
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <div class="dropdown">
-                                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                                                                    type="button" data-bs-toggle="dropdown">
-                                                                Actions
-                                                            </button>
-                                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                                <li><button class="dropdown-item" @onclick="() => ViewRoomDetails(room)">
-                                                                    <i class="fas fa-eye me-2"></i>View Details
-                                                                </button></li>
-                                                                <li><button class="dropdown-item" @onclick="() => ViewRoomSchedule(room)">
-                                                                    <i class="fas fa-calendar-week me-2"></i>View Schedule
-                                                                </button></li>
-                                                                <li><button class="dropdown-item" @onclick="() => BookRoom(room)">
-                                                                    <i class="fas fa-calendar-plus me-2"></i>Book Room
-                                                                </button></li>
-                                                                <li><hr class="dropdown-divider"></li>
-                                                                <li><button class="dropdown-item" @onclick="() => EditRoom(room)">
-                                                                    <i class="fas fa-edit me-2"></i>Edit Room
-                                                                </button></li>
-                                                                <li><button class="dropdown-item" @onclick="() => ToggleRoomStatus(room)">
-                                                                    <i class="fas @(room.IsActive ? "fa-pause" : "fa-play") me-2"></i>@(room.IsActive ? "Deactivate" : "Activate")
-                                                                </button></li>
-                                                                <li><button class="dropdown-item text-danger" @onclick="() => DeleteRoom(room)">
-                                                                    <i class="fas fa-trash me-2"></i>Delete
-                                                                </button></li>
-                                                            </ul>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                            else
-                            {
-                                <!-- Card View -->
-                                <div class="row p-3">
-                                    @foreach (var room in filteredRooms.Take(pageSize))
-                                    {
-                                        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-                                            <div class="card h-100 room-card">
-                                                <div class="card-header d-flex justify-content-between align-items-center bg-light">
-                                                    <h6 class="card-title mb-0 text-primary">@room.Name</h6>
-                                                    <span class="badge @GetStatusBadgeClass(room)">@GetStatusText(room)</span>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="room-info">
-                                                        <p class="mb-2">
-                                                            <i class="fas fa-building text-primary me-2"></i>
-                                                            <strong>Building:</strong> @room.Building?.Name
-                                                        </p>
-                                                        @if (!string.IsNullOrEmpty(room.RoomNumber))
-                                                        {
-                                                            <p class="mb-2">
-                                                                <i class="fas fa-door-open text-success me-2"></i>
-                                                                <strong>Room:</strong> @room.RoomNumber
-                                                            </p>
-                                                        }
-                                                        <p class="mb-2">
-                                                            <i class="fas fa-users text-info me-2"></i>
-                                                            <strong>Capacity:</strong> @room.Capacity people
-                                                        </p>
-                                                        <p class="mb-2">
-                                                            <i class="fas @GetActivityIcon(room.Activity) @GetActivityColor(room.Activity) me-2"></i>
-                                                            <strong>Type:</strong> @room.Activity
-                                                        </p>
-                                                        @if (!string.IsNullOrEmpty(room.Description))
-                                                        {
-                                                            <p class="text-muted small">
-                                                                <i class="fas fa-info-circle me-1"></i>
-                                                                @((room.Description.Length > 80) ? room.Description.Substring(0, 80) + "..." : room.Description)
-                                                            </p>
-                                                        }
-                                                    </div>
-                                                </div>
-                                                <div class="card-footer bg-transparent">
-                                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => ViewRoomDetails(room)">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => EditRoom(room)">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button class="btn btn-outline-info btn-sm" @onclick="() => BookRoom(room)">
-                                                            <i class="fas fa-calendar-plus"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                        @if (filteredRooms != null && filteredRooms.Count() > pageSize)
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Search rooms..." @bind="searchTerm" @bind:after="ApplyFilters" />
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" @bind="buildingFilter" @bind:after="ApplyFilters">
+                        <option value="">All Facilities</option>
+                        @if (buildings != null)
                         {
-                            <div class="card-footer">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">Showing @Math.Min(pageSize, filteredRooms.Count()) of @filteredRooms.Count() rooms</small>
-                                    <nav>
-                                        <ul class="pagination pagination-sm mb-0">
-                                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                                                <button class="page-link" @onclick="() => ChangePage(currentPage - 1)" disabled="@(currentPage == 1)">Previous</button>
-                                            </li>
-                                            @for (int i = 1; i <= totalPages; i++)
-                                            {
-                                                <li class="page-item @(currentPage == i ? "active" : "")">
-                                                    <button class="page-link" @onclick="() => ChangePage(i)">@i</button>
-                                                </li>
-                                            }
-                                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                                                <button class="page-link" @onclick="() => ChangePage(currentPage + 1)" disabled="@(currentPage == totalPages)">Next</button>
-                                            </li>
-                                        </ul>
-                                    </nav>
-                                </div>
-                            </div>
+                            @foreach (var building in buildings)
+                            {
+                                <option value="@building.Id">@building.Name</option>
+                            }
                         }
-                    </div>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" @bind="statusFilter" @bind:after="ApplyFilters">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ResetFilters">
+                        <i class="fas fa-undo me-1"></i>Reset
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Add/Edit Room Modal (simplified - full implementation would be similar to the main Rooms page) -->
-        @if (showRoomModal)
-        {
-            <div class="modal-backdrop fade show" @onclick="CloseModal"></div>
-            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1060;">
-                <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content" @onclick:stopPropagation="true">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title">
-                                <i class="fas @(isEditMode ? "fa-edit" : "fa-plus") me-2"></i>
-                                @(isEditMode ? "Edit Room" : "Add New Room")
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> 
-                                For a full room management experience, please use the main <a href="/rooms" class="alert-link">Rooms page</a>.
-                            </div>
-                            <p>This is a simplified admin view. The full room creation and editing functionality is available on the main rooms page.</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
-                            <a href="/rooms" class="btn btn-primary">Go to Full Room Manager</a>
-                        </div>
-                    </div>
+    <!-- Rooms Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Rooms (@(filteredRooms?.Count() ?? 0))</h5>
+        </div>
+        <div class="card-body p-0">
+            @if (filteredRooms == null)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border" role="status"></div>
                 </div>
-            </div>
-        }
-    </Authorized>
-    <NotAuthorized>
-        <div class="container-fluid">
-            <div class="row justify-content-center">
-                <div class="col-md-6">
-                    <div class="text-center mt-5">
-                        <i class="fas fa-lock fa-4x text-muted mb-4"></i>
-                        <h2>Access Restricted</h2>
-                        <p class="text-muted">You need administrator or secretary privileges to access room management.</p>
-                        <a href="/Account/Login" class="btn btn-primary">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </a>
-                    </div>
+            }
+            else if (!filteredRooms.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-door-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No rooms found</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Room Name</th>
+                                <th>Facility</th>
+                                <th>Type</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
+                                <th class="text-end" style="width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var room in filteredRooms)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-medium">@room.Name</div>
+                                        @if (!string.IsNullOrEmpty(room.RoomNumber))
+                                        {
+                                            <small class="text-muted">Room @room.RoomNumber</small>
+                                        }
+                                    </td>
+                                    <td>@room.Building?.Name</td>
+                                    <td>
+                                        <span class="badge @GetActivityBadgeClass(room.Activity)">@room.Activity</span>
+                                    </td>
+                                    <td><i class="fas fa-users me-1"></i>@room.Capacity</td>
+                                    <td>
+                                        <span class="badge @(room.IsActive ? "bg-success" : "bg-danger")">
+                                            @(room.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group">
+                                            <button class="btn btn-outline-primary btn-sm" @onclick="() => ShowViewModal(room)" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => ShowEditModal(room)" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-info btn-sm" @onclick="() => ShowActionsModal(room)" title="More">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- View Room Modal -->
+@if (showViewModal && selectedRoom != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-door-open me-2"></i>@selectedRoom.Name</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm">
+                        <tr><td class="fw-bold">Room Number:</td><td>@(selectedRoom.RoomNumber ?? "N/A")</td></tr>
+                        <tr><td class="fw-bold">Facility:</td><td>@(selectedRoom.Building?.Name ?? "N/A")</td></tr>
+                        <tr><td class="fw-bold">Capacity:</td><td>@selectedRoom.Capacity people</td></tr>
+                        <tr><td class="fw-bold">Type:</td><td><span class="badge @GetActivityBadgeClass(selectedRoom.Activity)">@selectedRoom.Activity</span></td></tr>
+                        <tr><td class="fw-bold">Status:</td><td><span class="badge @(selectedRoom.IsActive ? "bg-success" : "bg-danger")">@(selectedRoom.IsActive ? "Active" : "Inactive")</span></td></tr>
+                        <tr><td class="fw-bold">Hourly Rate:</td><td>@(selectedRoom.HourlyRate?.ToString("C") ?? "Free")</td></tr>
+                        @if (!string.IsNullOrEmpty(selectedRoom.Location))
+                        {
+                            <tr><td class="fw-bold">Location:</td><td>@selectedRoom.Location</td></tr>
+                        }
+                    </table>
+                    @if (!string.IsNullOrEmpty(selectedRoom.Description))
+                    {
+                        <hr />
+                        <h6>Description</h6>
+                        <p class="mb-0">@selectedRoom.Description</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" @onclick="() => ShowEditModal(selectedRoom)"><i class="fas fa-edit me-1"></i>Edit</button>
+                    <button class="btn btn-secondary" @onclick="CloseModals">Close</button>
                 </div>
             </div>
         </div>
-    </NotAuthorized>
-</AuthorizeView>
+    </div>
+}
+
+<!-- Edit Room Modal -->
+@if (showEditModal && editingRoom != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Room</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Room Name *</label>
+                            <input type="text" class="form-control" @bind="editingRoom.Name" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Room Number</label>
+                            <input type="text" class="form-control" @bind="editingRoom.RoomNumber" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Facility *</label>
+                            <select class="form-select" @bind="editingRoom.BuildingId">
+                                <option value="0">Select...</option>
+                                @if (buildings != null)
+                                {
+                                    @foreach (var b in buildings)
+                                    {
+                                        <option value="@b.Id">@b.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Capacity *</label>
+                            <input type="number" class="form-control" @bind="editingRoom.Capacity" min="1" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Activity Type *</label>
+                            <select class="form-select" @bind="editingRoom.Activity">
+                                @foreach (var a in Enum.GetValues<ActivityType>())
+                                {
+                                    <option value="@a">@a</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Hourly Rate</label>
+                            <input type="number" class="form-control" @bind="editingRoom.HourlyRate" step="0.01" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="2" @bind="editingRoom.Description"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editRoomIsActive" @bind="editingRoom.IsActive" />
+                                <label class="form-check-label" for="editRoomIsActive">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editRoomIsAvailable" @bind="editingRoom.IsAvailable" />
+                                <label class="form-check-label" for="editRoomIsAvailable">Available</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveRoom" disabled="@isSaving">
+                        @if (isSaving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Add Room Modal -->
+@if (showAddModal && newRoom != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Add New Room</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Room Name *</label>
+                            <input type="text" class="form-control" @bind="newRoom.Name" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Room Number</label>
+                            <input type="text" class="form-control" @bind="newRoom.RoomNumber" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Facility *</label>
+                            <select class="form-select" @bind="newRoom.BuildingId">
+                                <option value="0">Select...</option>
+                                @if (buildings != null)
+                                {
+                                    @foreach (var b in buildings)
+                                    {
+                                        <option value="@b.Id">@b.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Capacity *</label>
+                            <input type="number" class="form-control" @bind="newRoom.Capacity" min="1" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Activity Type *</label>
+                            <select class="form-select" @bind="newRoom.Activity">
+                                @foreach (var a in Enum.GetValues<ActivityType>())
+                                {
+                                    <option value="@a">@a</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Hourly Rate</label>
+                            <input type="number" class="form-control" @bind="newRoom.HourlyRate" step="0.01" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="2" @bind="newRoom.Description"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary" @onclick="CreateRoom" disabled="@isSaving">
+                        @if (isSaving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Create Room
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Actions Modal -->
+@if (showActionsModal && selectedRoom != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-door-open me-2"></i>@selectedRoom.Name</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" @onclick="() => ShowViewModal(selectedRoom)">
+                            <i class="fas fa-eye me-2"></i>View Details
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="() => ShowEditModal(selectedRoom)">
+                            <i class="fas fa-edit me-2"></i>Edit Room
+                        </button>
+                        <hr />
+                        <button class="btn @(selectedRoom.IsActive ? "btn-outline-warning" : "btn-outline-success")" @onclick="ToggleStatus">
+                            <i class="fas @(selectedRoom.IsActive ? "fa-pause" : "fa-play") me-2"></i>
+                            @(selectedRoom.IsActive ? "Deactivate" : "Activate")
+                        </button>
+                        <button class="btn btn-outline-danger" @onclick="DeleteRoom">
+                            <i class="fas fa-trash me-2"></i>Delete Room
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private IEnumerable<Room>? rooms;
     private IEnumerable<Room>? filteredRooms;
     private IEnumerable<Building>? buildings;
-    private bool showRoomModal = false;
-    private bool isEditMode = false;
-    private bool isProcessing = false;
-    private string statusMessage = string.Empty;
+    
+    private bool showViewModal, showEditModal, showAddModal, showActionsModal;
+    private Room? selectedRoom;
+    private Room? editingRoom;
+    private Room? newRoom;
+    
+    private bool isSaving;
+    private string statusMessage = "";
     private string statusMessageType = "success";
-    private string viewMode = "table";
-    private int todayBookings = 0;
-
-    // Filter properties
-    private string searchTerm = string.Empty;
-    private string buildingFilter = string.Empty;
-    private string activityFilter = string.Empty;
-    private string statusFilter = string.Empty;
-    private int? minCapacityFilter;
-
-    // Pagination
-    private int currentPage = 1;
-    private int pageSize = 20;
-    private int totalPages => filteredRooms != null ? (int)Math.Ceiling((double)filteredRooms.Count() / pageSize) : 1;
+    
+    private string searchTerm = "";
+    private string buildingFilter = "";
+    private string statusFilter = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -473,313 +436,180 @@
         {
             rooms = await RoomService.GetAllRoomsAsync();
             buildings = await BuildingService.GetAllBuildingsAsync();
-            
-            // Calculate today's bookings (simplified)
-            todayBookings = 5; // TODO: Implement actual booking count for today
-            
             ApplyFilters();
-            StateHasChanged();
         }
         catch (Exception ex)
         {
-            ShowStatusMessage($"Error loading data: {ex.Message}", "error");
+            statusMessage = "Error loading data: " + ex.Message;
+            statusMessageType = "danger";
         }
     }
 
     private void ApplyFilters()
     {
-        if (rooms == null)
-        {
-            filteredRooms = null;
-            return;
-        }
-
+        if (rooms == null) { filteredRooms = null; return; }
+        
         filteredRooms = rooms;
-
-        // Search filter
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            filteredRooms = filteredRooms.Where(r => 
-                r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                (r.RoomNumber?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (r.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
-        }
-
-        // Building filter
-        if (!string.IsNullOrEmpty(buildingFilter) && int.TryParse(buildingFilter, out int buildingId))
-        {
-            filteredRooms = filteredRooms.Where(r => r.BuildingId == buildingId);
-        }
-
-        // Activity filter
-        if (!string.IsNullOrEmpty(activityFilter) && Enum.TryParse<ActivityType>(activityFilter, out var activity))
-        {
-            filteredRooms = filteredRooms.Where(r => r.Activity == activity);
-        }
-
-        // Status filter
-        if (!string.IsNullOrEmpty(statusFilter))
-        {
-            filteredRooms = statusFilter switch
-            {
-                "active" => filteredRooms.Where(r => r.IsActive),
-                "inactive" => filteredRooms.Where(r => !r.IsActive),
-                "available" => filteredRooms.Where(r => r.IsActive && r.IsAvailable),
-                _ => filteredRooms
-            };
-        }
-
-        // Capacity filter
-        if (minCapacityFilter.HasValue)
-        {
-            filteredRooms = filteredRooms.Where(r => r.Capacity >= minCapacityFilter.Value);
-        }
-
-        // Reset pagination when filters change
-        currentPage = 1;
-        StateHasChanged();
+        
+        if (!string.IsNullOrEmpty(searchTerm))
+            filteredRooms = filteredRooms.Where(r => r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        
+        if (!string.IsNullOrEmpty(buildingFilter) && int.TryParse(buildingFilter, out int bId))
+            filteredRooms = filteredRooms.Where(r => r.BuildingId == bId);
+        
+        if (statusFilter == "active")
+            filteredRooms = filteredRooms.Where(r => r.IsActive);
+        else if (statusFilter == "inactive")
+            filteredRooms = filteredRooms.Where(r => !r.IsActive);
     }
 
     private void ResetFilters()
     {
-        searchTerm = string.Empty;
-        buildingFilter = string.Empty;
-        activityFilter = string.Empty;
-        statusFilter = string.Empty;
-        minCapacityFilter = null;
-        currentPage = 1;
+        searchTerm = "";
+        buildingFilter = "";
+        statusFilter = "";
         ApplyFilters();
     }
 
-    private bool HasActiveFilters()
+    private void CloseModals()
     {
-        return !string.IsNullOrEmpty(searchTerm) || 
-               !string.IsNullOrEmpty(buildingFilter) || 
-               !string.IsNullOrEmpty(activityFilter) || 
-               !string.IsNullOrEmpty(statusFilter) || 
-               minCapacityFilter.HasValue;
+        showViewModal = showEditModal = showAddModal = showActionsModal = false;
+        selectedRoom = editingRoom = null;
     }
 
-    private void ChangePage(int page)
+    private void ShowViewModal(Room room)
     {
-        if (page >= 1 && page <= totalPages)
+        CloseModals();
+        selectedRoom = room;
+        showViewModal = true;
+    }
+
+    private void ShowEditModal(Room room)
+    {
+        CloseModals();
+        editingRoom = new Room
         {
-            currentPage = page;
-            StateHasChanged();
-        }
+            Id = room.Id,
+            Name = room.Name,
+            RoomNumber = room.RoomNumber,
+            BuildingId = room.BuildingId,
+            Capacity = room.Capacity,
+            Activity = room.Activity,
+            Description = room.Description,
+            HourlyRate = room.HourlyRate,
+            Location = room.Location,
+            IsActive = room.IsActive,
+            IsAvailable = room.IsAvailable
+        };
+        showEditModal = true;
     }
 
     private void ShowAddRoomModal()
     {
-        isEditMode = false;
-        showRoomModal = true;
-        StateHasChanged();
+        CloseModals();
+        newRoom = new Room { Name = "", Capacity = 10, Activity = ActivityType.Meeting, IsActive = true, IsAvailable = true };
+        showAddModal = true;
     }
 
-    private void EditRoom(Room room)
+    private void ShowActionsModal(Room room)
     {
-        isEditMode = true;
-        showRoomModal = true;
-        StateHasChanged();
+        CloseModals();
+        selectedRoom = room;
+        showActionsModal = true;
     }
 
-    private void CloseModal()
+    private async Task SaveRoom()
     {
-        showRoomModal = false;
-        isEditMode = false;
-        StateHasChanged();
-    }
-
-    private void ViewRoomDetails(Room room)
-    {
-        ShowStatusMessage($"Viewing details for {room.Name}...", "success");
-        // TODO: Implement room details modal or navigation
-    }
-
-    private void ViewRoomSchedule(Room room)
-    {
-        ShowStatusMessage($"Loading schedule for {room.Name}...", "success");
-        // TODO: Implement room schedule view
-    }
-
-    private void BookRoom(Room room)
-    {
-        ShowStatusMessage($"Opening booking form for {room.Name}...", "success");
-        // TODO: Implement quick booking functionality
-    }
-
-    private async Task ToggleRoomStatus(Room room)
-    {
+        if (editingRoom == null) return;
+        isSaving = true;
         try
         {
-            room.IsActive = !room.IsActive;
-            await RoomService.UpdateRoomAsync(room);
-            
-            var status = room.IsActive ? "activated" : "deactivated";
-            ShowStatusMessage($"Room '{room.Name}' has been {status}!", "success");
-            
+            await RoomService.UpdateRoomAsync(editingRoom);
+            statusMessage = "Room updated successfully.";
+            statusMessageType = "success";
+            CloseModals();
             await LoadData();
         }
         catch (Exception ex)
         {
-            ShowStatusMessage($"Error updating room status: {ex.Message}", "error");
+            statusMessage = "Error: " + ex.Message;
+            statusMessageType = "danger";
         }
+        isSaving = false;
     }
 
-    private async Task DeleteRoom(Room room)
+    private async Task CreateRoom()
     {
-        if (await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{room.Name}'? This action cannot be undone."))
+        if (newRoom == null || newRoom.BuildingId == 0)
         {
-            try
-            {
-                var result = await RoomService.DeleteRoomAsync(room.Id);
-                if (result)
-                {
-                    ShowStatusMessage($"Room '{room.Name}' deleted successfully!", "success");
-                    await LoadData();
-                }
-                else
-                {
-                    ShowStatusMessage("Failed to delete room. Room not found.", "error");
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowStatusMessage($"Error deleting room: {ex.Message}", "error");
-            }
+            statusMessage = "Please select a facility.";
+            statusMessageType = "danger";
+            return;
         }
-    }
-
-    private async Task ViewAllSchedules()
-    {
+        isSaving = true;
         try
         {
-            isProcessing = true;
-            StateHasChanged();
-
-            // Simulate loading all schedules
-            await Task.Delay(1000);
-            ShowStatusMessage("Loading comprehensive room schedules...", "success");
+            await RoomService.CreateRoomAsync(newRoom);
+            statusMessage = "Room created successfully.";
+            statusMessageType = "success";
+            CloseModals();
+            await LoadData();
         }
         catch (Exception ex)
         {
-            ShowStatusMessage($"Error loading schedules: {ex.Message}", "error");
+            statusMessage = "Error: " + ex.Message;
+            statusMessageType = "danger";
         }
-        finally
+        isSaving = false;
+    }
+
+    private async Task ToggleStatus()
+    {
+        if (selectedRoom == null) return;
+        try
         {
-            isProcessing = false;
-            StateHasChanged();
+            selectedRoom.IsActive = !selectedRoom.IsActive;
+            await RoomService.UpdateRoomAsync(selectedRoom);
+            statusMessage = selectedRoom.IsActive ? "Room activated." : "Room deactivated.";
+            statusMessageType = "success";
+            CloseModals();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = "Error: " + ex.Message;
+            statusMessageType = "danger";
         }
     }
 
-    private void ShowStatusMessage(string message, string type)
+    private async Task DeleteRoom()
     {
-        statusMessage = message;
-        statusMessageType = type;
-        StateHasChanged();
-
-        if (type == "success")
+        if (selectedRoom == null) return;
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete '{selectedRoom.Name}'?"))
         {
-            Task.Delay(3000).ContinueWith(task =>
+            try
             {
-                InvokeAsync(() =>
-                {
-                    ClearStatusMessage();
-                    StateHasChanged();
-                });
-            });
+                await RoomService.DeleteRoomAsync(selectedRoom.Id);
+                statusMessage = "Room deleted.";
+                statusMessageType = "success";
+                CloseModals();
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                statusMessage = "Error: " + ex.Message;
+                statusMessageType = "danger";
+            }
         }
     }
 
-    private void ClearStatusMessage()
-    {
-        statusMessage = string.Empty;
-        StateHasChanged();
-    }
+    private void ClearStatusMessage() => statusMessage = "";
 
-    private string GetActivityIcon(ActivityType activity)
+    private string GetActivityBadgeClass(ActivityType activity) => activity switch
     {
-        return activity switch
-        {
-            ActivityType.Course => "fa-graduation-cap",
-            ActivityType.Meeting => "fa-handshake",
-            ActivityType.Training => "fa-dumbbell",
-            _ => "fa-tasks"
-        };
-    }
-
-    private string GetActivityColor(ActivityType activity)
-    {
-        return activity switch
-        {
-            ActivityType.Course => "text-success",
-            ActivityType.Meeting => "text-primary",
-            ActivityType.Training => "text-warning",
-            _ => "text-secondary"
-        };
-    }
-
-    private string GetActivityBadgeClass(ActivityType activity)
-    {
-        return activity switch
-        {
-            ActivityType.Course => "bg-success",
-            ActivityType.Meeting => "bg-primary",
-            ActivityType.Training => "bg-warning",
-            _ => "bg-secondary"
-        };
-    }
-
-    private string GetStatusBadgeClass(Room room)
-    {
-        if (!room.IsActive) return "bg-danger";
-        if (!room.IsAvailable) return "bg-warning";
-        return "bg-success";
-    }
-
-    private string GetStatusIcon(Room room)
-    {
-        if (!room.IsActive) return "fa-pause";
-        if (!room.IsAvailable) return "fa-calendar-alt";
-        return "fa-check-circle";
-    }
-
-    private string GetStatusText(Room room)
-    {
-        if (!room.IsActive) return "Inactive";
-        if (!room.IsAvailable) return "Booked";
-        return "Available";
-    }
+        ActivityType.Course => "bg-success",
+        ActivityType.Meeting => "bg-primary",
+        ActivityType.Training => "bg-warning",
+        _ => "bg-secondary"
+    };
 }
-
-<style>
-    .room-card {
-        transition: all 0.3s ease;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .room-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    .modal-backdrop {
-        background-color: rgba(0, 0, 0, 0.5);
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1040;
-    }
-
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .room-info i {
-        width: 20px;
-    }
-</style>

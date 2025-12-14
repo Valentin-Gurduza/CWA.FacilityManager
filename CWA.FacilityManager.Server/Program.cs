@@ -1,68 +1,114 @@
-// Merged Program.cs (User-profile-history + Merge-Test branches)
-// Includes: User profile services, Calendar task services, User/Role/Permission management, seeding, custom auth policies.
+// CWA Facility Manager - Optimized Program.cs
+// Clean Architecture with proper service registration and middleware configuration
 
+using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CWA.FacilityManager.Application.Interfaces;                   // General application interfaces (Calendar, Rooms, etc.)
-using CWA.FacilityManager.Application.Interfaces.UserManagement;    // User management specific interfaces
-using CWA.FacilityManager.Application.Services;                     // General application services
-using CWA.FacilityManager.Application.Services.UserManagement;      // User management specific services
-using CWA.FacilityManager.Client.Pages;
+using CWA.FacilityManager.Application.Interfaces;
+using CWA.FacilityManager.Application.Interfaces.UserManagement;
+using CWA.FacilityManager.Application.Services;
+using CWA.FacilityManager.Application.Services.UserManagement;
 using CWA.FacilityManager.Client.Services;
 using CWA.FacilityManager.Domain.Models;
 using CWA.FacilityManager.Infrastructure.Contexts;
 using CWA.FacilityManager.Server.Components;
 using CWA.FacilityManager.Server.Components.Account;
-using CWA.FacilityManager.Server.Data;                              // SeedData
-using CWA.FacilityManager.Server.Extensions;                        // Database seeding extensions
-using CWA.FacilityManager.Server.Services;                          // ActiveUserRequirementHandler, RoleBasedRedirectService, EmailService, QrCodeService
+using CWA.FacilityManager.Server.Data;
+using CWA.FacilityManager.Server.Extensions;
+using CWA.FacilityManager.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-// Explicitly alias the RoleInitializationService to resolve ambiguity
 using UserManagementRoleInitService = CWA.FacilityManager.Application.Services.UserManagement.RoleInitializationService;
-
-// If you re-enable a custom DateTime converter, ensure the using below (was from CalendarManagement branch)
-// using CWA.FacilityManager.Shared.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Razor + Interactive (Server + WASM) + Identity auth state serialization
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+// ============================================================================
+// BLAZOR & RAZOR COMPONENTS
+// ============================================================================
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents()
     .AddAuthenticationStateSerialization();
 
-// Controllers + JSON options
+// ============================================================================
+// API CONTROLLERS & JSON CONFIGURATION
+// ============================================================================
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // Re-add when ready:
-        // options.JsonSerializerOptions.Converters.Add(new CalendarDateTimeConverter());
-        options.JsonSerializerOptions.WriteIndented = false;
+        options.JsonSerializerOptions.WriteIndented = builder.Environment.IsDevelopment();
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-builder.Services.AddCascadingAuthenticationState();
+// ============================================================================
+// RESPONSE COMPRESSION (Performance Optimization)
+// ============================================================================
 
-// Identity support helpers
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/javascript",
+        "application/json",
+        "text/css",
+        "text/html",
+        "text/json",
+        "text/plain"
+    });
+});
+
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.Fastest;
+});
+
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = CompressionLevel.SmallestSize;
+});
+
+// ============================================================================
+// MEMORY CACHING (Performance Optimization)
+// ============================================================================
+
+builder.Services.AddMemoryCache();
+
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION
+// ============================================================================
+
+builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 
-// Authentication & Identity cookies
 builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies();
+{
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+})
+.AddIdentityCookies();
 
-// Authorization policies
+// Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
+    // Basic policies
     options.AddPolicy("EmailConfirmed", policy =>
         policy.RequireAuthenticatedUser()
               .RequireClaim("EmailConfirmed", "True"));
@@ -154,47 +200,78 @@ builder.Services.AddAuthorization(options =>
                   CWA.FacilityManager.Application.Authorization.RoleLevels.Administrator)));
 });
 
-// Custom authorization handler
+// Authorization Handlers
 builder.Services.AddScoped<IAuthorizationHandler, ActiveUserRequirementHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, CWA.FacilityManager.Application.Authorization.RoleLevelHandler>();
 
-// DbContext
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// ============================================================================
+// DATABASE & ENTITY FRAMEWORK
+// ============================================================================
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString, b => b.MigrationsAssembly("CWA.FacilityManager.Infrastructure")));
+{
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.MigrationsAssembly("CWA.FacilityManager.Infrastructure");
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null);
+        sqlOptions.CommandTimeout(30);
+    });
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// Identity configuration (enhanced from Merge-Test branch with User-profile-history requirements)
+// ============================================================================
+// IDENTITY CONFIGURATION
+// ============================================================================
+
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
-    {
-        // Simplified for easier testing (from User-profile-history) but configurable for production
-        options.SignIn.RequireConfirmedAccount =
-            builder.Configuration.GetValue<bool>("Identity:RequireConfirmedAccount",
-                builder.Environment.IsProduction() ? true : false); // False for development, true for production
+{
+    // Get settings from configuration
+    var securityConfig = builder.Configuration.GetSection("Security");
+    
+    options.SignIn.RequireConfirmedAccount = builder.Configuration.GetValue<bool>(
+        "Identity:RequireConfirmedAccount",
+        builder.Environment.IsProduction());
 
-        options.Password.RequiredLength = 8;
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = false;
+    // Password policy from configuration
+    options.Password.RequiredLength = securityConfig.GetValue("PasswordPolicy:RequiredLength", 8);
+    options.Password.RequireDigit = securityConfig.GetValue("PasswordPolicy:RequireDigit", true);
+    options.Password.RequireLowercase = securityConfig.GetValue("PasswordPolicy:RequireLowercase", true);
+    options.Password.RequireUppercase = securityConfig.GetValue("PasswordPolicy:RequireUppercase", true);
+    options.Password.RequireNonAlphanumeric = securityConfig.GetValue("PasswordPolicy:RequireNonAlphanumeric", false);
 
-        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-        options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.AllowedForNewUsers = true;
+    // Lockout settings from configuration
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(
+        securityConfig.GetValue("Lockout:DefaultLockoutTimeSpanMinutes", 15));
+    options.Lockout.MaxFailedAccessAttempts = securityConfig.GetValue("Lockout:MaxFailedAccessAttempts", 5);
+    options.Lockout.AllowedForNewUsers = securityConfig.GetValue("Lockout:AllowedForNewUsers", true);
 
-        options.User.RequireUniqueEmail = true;
-    })
-    .AddRoles<ApplicationRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders()
-    .AddClaimsPrincipalFactory<EmailConfirmedClaimsPrincipalFactory>();
+    options.User.RequireUniqueEmail = true;
+})
+.AddRoles<ApplicationRole>()
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddSignInManager()
+.AddDefaultTokenProviders()
+.AddClaimsPrincipalFactory<EmailConfirmedClaimsPrincipalFactory>();
 
-// AutoMapper (User Management mapping profile)
+// ============================================================================
+// AUTOMAPPER
+// ============================================================================
+
 builder.Services.AddAutoMapper(typeof(CWA.FacilityManager.Application.Mappings.UserManagementMappingProfile));
+
+// ============================================================================
+// APPLICATION SERVICES
+// ============================================================================
 
 // User Management Services
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
@@ -202,88 +279,72 @@ builder.Services.AddScoped<IRoleManagementService, RoleManagementService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<UserManagementRoleInitService>();
 
-// Room / Facility / Event Services
+// Facility Services
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IBuildingService, BuildingService>();
 builder.Services.AddScoped<IEventService, EventService>();
-builder.Services.AddScoped<IAuditLogService, AuditLogService>();
-
-// Booking Services
 builder.Services.AddScoped<IBookingService, BookingService>();
-
-// Calendar management
 builder.Services.AddScoped<ICalendarTaskService, CalendarTaskService>();
 
-// Email + QR Code + Role-based redirect
+// Profile & Audit Services
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
+// Infrastructure Services
 builder.Services.AddScoped<IEmailSender<ApplicationUser>, EmailService>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, EmailService>();
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IRoleBasedRedirectService, RoleBasedRedirectService>();
 
-// HttpContext + HttpClient (server-side base address)
+// Client Services
+builder.Services.AddScoped<ICalendarTaskApiService, CalendarTaskApiService>();
+
+// ============================================================================
+// HTTP SERVICES
+// ============================================================================
+
 builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<HttpClient>(sp =>
 {
     var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
     var request = httpContextAccessor.HttpContext?.Request;
-    var baseAddress = request != null ? $"{request.Scheme}://{request.Host}" : "https://localhost:5001";
-    return new HttpClient { BaseAddress = new Uri(baseAddress) };
+    var baseAddress = request != null 
+        ? $"{request.Scheme}://{request.Host}" 
+        : "https://localhost:5001";
+    
+    return new HttpClient 
+    { 
+        BaseAddress = new Uri(baseAddress),
+        Timeout = TimeSpan.FromSeconds(30)
+    };
 });
 
-// Client calendar API service
-builder.Services.AddScoped<ICalendarTaskApiService, CalendarTaskApiService>();
-
-// Application services (from User-profile-history branch)
-builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-
-// Add HttpClient for external calls
 builder.Services.AddHttpClient();
+
+// ============================================================================
+// HEALTH CHECKS
+// ============================================================================
+
+builder.Services.AddHealthChecks();
+
+// ============================================================================
+// BUILD APPLICATION
+// ============================================================================
 
 var app = builder.Build();
 
-// Initialization / Seeding (combined approach from both branches)
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var logger = services.GetRequiredService<ILogger<Program>>();
-    try
-    {
-        // Core data seeding (from Merge-Test)
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        await SeedData.Initialize(context);
+// ============================================================================
+// DATABASE INITIALIZATION & SEEDING
+// ============================================================================
 
-        // Seed default administrator user
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
-        await SeedData.SeedDefaultAdminUser(userManager, roleManager, logger);
+await InitializeDatabaseAsync(app);
 
-        // System permissions & role-permission assignments (from Merge-Test)
-        var permissionService = services.GetRequiredService<IPermissionService>();
-        await permissionService.InitializeSystemPermissionsAsync();
+// ============================================================================
+// MIDDLEWARE PIPELINE
+// ============================================================================
 
-        var roleInitService = services.GetRequiredService<UserManagementRoleInitService>();
-        await roleInitService.InitializeDefaultRolePermissionsAsync();
-
-        logger.LogInformation("Application initialization completed successfully.");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred during application initialization.");
-        
-        // Fallback to User-profile-history approach if main seeding fails
-        try
-        {
-            logger.LogInformation("Attempting fallback database seeding...");
-            await app.SeedDatabaseAsync();
-        }
-        catch (Exception seedEx)
-        {
-            logger.LogWarning(seedEx, "Fallback seeding also failed. This might be normal during development if SQL Server is not running.");
-        }
-    }
-}
-
-// Pipeline
+// Development-specific middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
@@ -295,22 +356,32 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Response compression (before static files for better performance)
+app.UseResponseCompression();
 
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Authentication / Authorization
+// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseAntiforgery();
 
+// ============================================================================
+// ENDPOINT MAPPING
+// ============================================================================
+
+// Health check endpoint
+app.MapHealthChecks("/health");
+
+// Blazor components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(CWA.FacilityManager.Client._Imports).Assembly);
 
-// Map static assets for WebAssembly
+// Static assets for WebAssembly
 app.MapStaticAssets();
 
 // Identity endpoints
@@ -319,4 +390,67 @@ app.MapAdditionalIdentityEndpoints();
 // API Controllers
 app.MapControllers();
 
+// ============================================================================
+// RUN APPLICATION
+// ============================================================================
+
 app.Run();
+
+// ============================================================================
+// HELPER METHODS
+// ============================================================================
+
+static async Task InitializeDatabaseAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    
+    try
+    {
+        logger.LogInformation("Starting database initialization...");
+        
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        
+        // Ensure database exists and apply migrations
+        if (app.Environment.IsDevelopment())
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
+        
+        // Seed initial data
+        await SeedData.Initialize(context);
+
+        // Seed default administrator
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
+        await SeedData.SeedDefaultAdminUser(userManager, roleManager, logger);
+
+        // Initialize permissions
+        var permissionService = services.GetRequiredService<IPermissionService>();
+        await permissionService.InitializeSystemPermissionsAsync();
+
+        // Initialize role permissions
+        var roleInitService = services.GetRequiredService<UserManagementRoleInitService>();
+        await roleInitService.InitializeDefaultRolePermissionsAsync();
+
+        logger.LogInformation("Database initialization completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred during database initialization.");
+        
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning("Attempting fallback database seeding...");
+            try
+            {
+                await app.SeedDatabaseAsync();
+            }
+            catch (Exception seedEx)
+            {
+                logger.LogWarning(seedEx, "Fallback seeding failed. This is expected if the database is not available.");
+            }
+        }
+    }
+}

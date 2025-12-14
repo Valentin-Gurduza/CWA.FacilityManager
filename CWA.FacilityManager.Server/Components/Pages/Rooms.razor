@@ -19,69 +19,59 @@
     <Authorized>
         <div class="container-fluid">
             <!-- Header Section -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1 class="h2">
-                            <i class="fas fa-door-open me-2"></i>Rooms Management
-                        </h1>
-                        <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="headerAdminContext">
-                            <Authorized>
-                                <div class="btn-group">
-                                    <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
-                                        <i class="fas fa-plus me-2"></i> Add New Room
-                                    </button>
-                                </div>
-                            </Authorized>
-                        </AuthorizeView>
+            <div class="page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="page-icon me-3">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div>
+                            <h1 class="page-title mb-0">Rooms Management</h1>
+                            <p class="page-subtitle mb-0">Browse and manage facility rooms</p>
+                        </div>
                     </div>
+                    <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="headerAdminContext">
+                        <Authorized>
+                            <button class="btn btn-primary btn-lg" @onclick="ShowAddRoomModal" type="button">
+                                <i class="fas fa-plus me-2"></i> Add New Room
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
                 </div>
             </div>
 
             <!-- Quick Stats Cards -->
-            <div class="row mb-4">
+            <div class="row mb-4 g-4">
                 <div class="col-md-4">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Total Rooms</h6>
-                                    <h3 class="mb-0">@(rooms?.Count() ?? 0)</h3>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-door-open fa-2x"></i>
-                                </div>
-                            </div>
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon-wrapper primary">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">@(rooms?.Count() ?? 0)</h3>
+                            <p class="stat-label">Total Rooms</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card bg-success text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Total Capacity</h6>
-                                    <h3 class="mb-0">@(rooms?.Sum(r => r.Capacity) ?? 0)</h3>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-users fa-2x"></i>
-                                </div>
-                            </div>
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon-wrapper success">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">@(rooms?.Sum(r => r.Capacity) ?? 0)</h3>
+                            <p class="stat-label">Total Capacity</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card bg-info text-white">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Available Buildings</h6>
-                                    <h3 class="mb-0">@(buildings?.Count() ?? 0)</h3>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-building fa-2x"></i>
-                                </div>
-                            </div>
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon-wrapper info">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">@(buildings?.Count() ?? 0)</h3>
+                            <p class="stat-label">Buildings</p>
                         </div>
                     </div>
                 </div>
@@ -93,7 +83,7 @@
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="alert @(statusMessageType == "success" ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
-                            <i class="fas @(statusMessageType == "success" ? "fa-check-circle" : "fa-exclamation-triangle")"></i>
+                            <i class="fas @(statusMessageType == "success" ? "fa-check-circle" : "fa-exclamation-triangle") me-2"></i>
                             @statusMessage
                             <button type="button" class="btn-close" @onclick="ClearStatusMessage"></button>
                         </div>
@@ -101,14 +91,14 @@
                 </div>
             }
 
-            <!-- User Profile Integration Notice (from User-profile-history branch) -->
+            <!-- User Profile Integration Notice -->
             <AuthorizeView Roles="Renter" Policy="ActiveUser" Context="renterNoticeContext">
                 <Authorized>
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="alert alert-info" role="alert">
                                 <div class="d-flex align-items-center">
-                                    <i class="fas fa-info-circle me-2"></i>
+                                    <i class="fas fa-info-circle me-3 fs-4"></i>
                                     <div>
                                         <strong>Room Booking Information</strong>
                                         <p class="mb-0">
@@ -125,25 +115,23 @@
             </AuthorizeView>
 
             <!-- Rooms Grid -->
-            <div class="row">
+            <div class="row g-4">
                 @if (rooms == null)
                 {
-                    <div class="col-12 text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
+                    <div class="col-12 text-center py-5">
+                        <div class="loading-spinner mx-auto mb-3"></div>
+                        <p class="text-muted">Loading rooms...</p>
                     </div>
                 }
                 else if (!rooms.Any())
                 {
                     <div class="col-12">
-                        <div class="alert alert-info text-center">
-                            <div class="mb-3">
-                                <i class="fas fa-door-open fa-4x text-muted"></i>
+                        <div class="empty-state glass-effect text-center py-5">
+                            <div class="empty-icon mb-4">
+                                <i class="fas fa-door-open"></i>
                             </div>
                             <h4>No Rooms Available</h4>
-                            <p>
-                                @* Show different messages based on user role *@
+                            <p class="text-muted">
                                 <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="noRoomsAdminContext">
                                     <Authorized>Start by adding your first room to the system!</Authorized>
                                     <NotAuthorized>No rooms are currently available for booking. Please contact an administrator.</NotAuthorized>
@@ -163,78 +151,70 @@
                 {
                     @foreach (var room in rooms)
                     {
-                        <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
-                            <div class="card h-100 room-card">
-                                <div class="card-header d-flex justify-content-between align-items-center bg-light">
-                                    <h5 class="card-title mb-0 text-primary">
-                                        @room.Name
-                                    </h5>
+                        <div class="col-xl-4 col-lg-6 col-md-6">
+                            <div class="room-card glass-effect h-100">
+                                <div class="room-card-header">
+                                    <div class="room-title-section">
+                                        <h5 class="room-name">@room.Name</h5>
+                                        <span class="room-number">@room.RoomNumber</span>
+                                    </div>
                                     <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="roomCardAdminContext">
                                         <Authorized>
                                             <div class="dropdown">
-                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <button class="btn btn-ghost btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
-                                                <ul class="dropdown-menu">
+                                                <ul class="dropdown-menu dropdown-menu-end">
                                                     <li><button class="dropdown-item" @onclick="() => EditRoom(room)" type="button">
-                                                        <i class="fas fa-edit"></i> Edit
+                                                        <i class="fas fa-edit me-2"></i> Edit
                                                     </button></li>
                                                     <li><button class="dropdown-item text-danger" @onclick="() => DeleteRoom(room)" type="button">
-                                                        <i class="fas fa-trash"></i> Delete
+                                                        <i class="fas fa-trash me-2"></i> Delete
                                                     </button></li>
                                                 </ul>
                                             </div>
                                         </Authorized>
                                     </AuthorizeView>
                                 </div>
-                                <div class="card-body">
-                                    <div class="room-info">
-                                        <p class="mb-2">
-                                            <i class="fas fa-building text-primary me-2"></i>
-                                            <strong>Building:</strong> @room.Building?.Name
-                                        </p>
-                                        @if (!string.IsNullOrEmpty(room.RoomNumber))
-                                        {
-                                            <p class="mb-2">
-                                                <i class="fas fa-door-open text-success me-2"></i>
-                                                <strong>Room Number:</strong> @room.RoomNumber
-                                            </p>
-                                        }
-                                        <p class="mb-2">
-                                            <i class="fas fa-users text-info me-2"></i>
-                                            <strong>Capacity:</strong> @room.Capacity people
-                                        </p>
-                                        <p class="mb-2">
-                                            <i class="fas @GetActivityIcon(room.Activity) @GetActivityColor(room.Activity) me-2"></i>
-                                            <strong>Activity:</strong> @room.Activity
-                                        </p>
-                                        <p class="mb-2">
-                                            <i class="fas fa-calendar text-warning me-2"></i>
-                                            <strong>Date:</strong> @room.Date.ToString("MMM dd, yyyy")
-                                        </p>
-                                        <p class="mb-2">
-                                            <i class="fas fa-clock text-info me-2"></i>
-                                            <strong>Time:</strong> @room.Time.ToString(@"hh\:mm")
-                                        </p>
-                                        @if (!string.IsNullOrEmpty(room.Description))
-                                        {
-                                            <p class="text-muted small">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                @room.Description
-                                            </p>
-                                        }
+                                <div class="room-card-body">
+                                    <div class="room-info-grid">
+                                        <div class="room-info-item">
+                                            <i class="fas fa-building"></i>
+                                            <span>@room.Building?.Name</span>
+                                        </div>
+                                        <div class="room-info-item">
+                                            <i class="fas fa-users"></i>
+                                            <span>@room.Capacity people</span>
+                                        </div>
+                                        <div class="room-info-item">
+                                            <i class="fas @GetActivityIcon(room.Activity)"></i>
+                                            <span>@room.Activity</span>
+                                        </div>
+                                        <div class="room-info-item">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>@room.Date.ToString("MMM dd, yyyy")</span>
+                                        </div>
+                                        <div class="room-info-item">
+                                            <i class="fas fa-clock"></i>
+                                            <span>@room.Time.ToString(@"hh\:mm")</span>
+                                        </div>
                                     </div>
+                                    @if (!string.IsNullOrEmpty(room.Description))
+                                    {
+                                        <p class="room-description">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            @room.Description
+                                        </p>
+                                    }
                                 </div>
-                                <div class="card-footer bg-transparent">
-                                    <div class="d-grid gap-2">
-                                        <AuthorizeView Roles="Renter,Administrator,Secretary" Policy="ActiveUser" Context="bookButtonContext">
-                                            <Authorized>
-                                                <button class="btn btn-outline-primary btn-sm" @onclick="() => ShowBookingModal(room)" type="button">
-                                                    <i class="fas fa-calendar-plus me-1"></i> Book Room
-                                                </button>
-                                            </Authorized>
-                                        </AuthorizeView>
-                                    </div>
+                                <div class="room-card-footer">
+                                    <AuthorizeView Roles="Renter,Administrator,Secretary" Policy="ActiveUser" Context="bookButtonContext">
+                                        <Authorized>
+                                            <button class="btn btn-primary w-100" @onclick="() => ShowBookingModal(room)" type="button">
+                                                <i class="fas fa-calendar-plus me-2"></i> Book Room
+                                            </button>
+                                        </Authorized>
+                                    </AuthorizeView>
                                 </div>
                             </div>
                         </div>
@@ -242,30 +222,30 @@
                 }
             </div>
 
-            <!-- Features Overview (from User-profile-history branch) -->
+            <!-- Features Overview -->
             @if (rooms == null || !rooms.Any())
             {
-                <div class="row mt-4">
+                <div class="row mt-5">
                     <div class="col-12">
-                        <div class="card">
+                        <div class="card glass-effect">
                             <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-star"></i> Room Management Features</h5>
+                                <h5 class="mb-0"><i class="fas fa-star me-2"></i> Room Management Features</h5>
                             </div>
                             <div class="card-body">
-                                <p class="card-text">This platform provides comprehensive room management capabilities:</p>
+                                <p>This platform provides comprehensive room management capabilities:</p>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <ul class="list-unstyled">
-                                            <li><i class="fas fa-check text-success me-2"></i> Browse available rooms</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> View room details and amenities</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Check room availability</li>
+                                        <ul class="feature-list">
+                                            <li><i class="fas fa-check-circle"></i> Browse available rooms</li>
+                                            <li><i class="fas fa-check-circle"></i> View room details and amenities</li>
+                                            <li><i class="fas fa-check-circle"></i> Check room availability</li>
                                         </ul>
                                     </div>
                                     <div class="col-md-6">
-                                        <ul class="list-unstyled">
-                                            <li><i class="fas fa-check text-success me-2"></i> Make room reservations</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Manage existing bookings</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Track booking history</li>
+                                        <ul class="feature-list">
+                                            <li><i class="fas fa-check-circle"></i> Make room reservations</li>
+                                            <li><i class="fas fa-check-circle"></i> Manage existing bookings</li>
+                                            <li><i class="fas fa-check-circle"></i> Track booking history</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -276,133 +256,111 @@
             }
         </div>
 
-        <!-- Add/Edit Room Modal (Admin/Secretary only) -->
+        <!-- Add/Edit Room Modal -->
         <AuthorizeView Roles="Administrator,Secretary" Policy="ActiveAdminOrSecretary" Context="modalAdminContext">
             <Authorized>
                 @if (showRoomModal)
                 {
-                    <!-- Modal Backdrop -->
                     <div class="modal-backdrop fade show" @onclick="CloseModal"></div>
-                    
-                    <!-- Modal Dialog -->
                     <div class="modal fade show d-block" tabindex="-1" style="z-index: 1060;">
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content" @onclick:stopPropagation="true">
-                                <div class="modal-header bg-primary text-white">
+                                <div class="modal-header">
                                     <h5 class="modal-title">
                                         <i class="fas @(isEditMode ? "fa-edit" : "fa-plus") me-2"></i>
                                         @(isEditMode ? "Edit Room" : "Add New Room")
                                     </h5>
-                                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                                    <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
                                 </div>
                                 
                                 <EditForm Model="roomModel" OnValidSubmit="SaveRoom" Context="editContext">
                                     <DataAnnotationsValidator />
                                     <div class="modal-body">
-                                        <ValidationSummary class="text-danger mb-3" />
+                                        <ValidationSummary class="alert alert-danger" role="alert" />
                                         
-                                        <!-- Room Name -->
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
+                                            <label class="form-label">
                                                 <i class="fas fa-tag me-1"></i>Room Name <span class="text-danger">*</span>
                                             </label>
-                                            <InputText class="form-control form-control-lg" @bind-Value="roomModel.Name" 
-                                                       placeholder="Enter room name (e.g., Conference Room A, Lab 101)" />
-                                            <ValidationMessage For="() => roomModel.Name" class="text-danger" />
+                                            <InputText class="form-control" @bind-Value="roomModel.Name" 
+                                                       placeholder="Enter room name" />
+                                            <ValidationMessage For="() => roomModel.Name" class="text-danger small" />
                                         </div>
 
-                                        <!-- Building Input -->
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
+                                            <label class="form-label">
                                                 <i class="fas fa-building me-1"></i>Building <span class="text-danger">*</span>
                                             </label>
-                                            <div class="input-group">
-                                                <InputText class="form-control form-control-lg" @bind-Value="buildingName" 
-                                                           placeholder="Enter building name" list="buildingsList" />
-                                                <datalist id="buildingsList">
-                                                    @if (buildings != null)
+                                            <InputText class="form-control" @bind-Value="buildingName" 
+                                                       placeholder="Enter building name" list="buildingsList" />
+                                            <datalist id="buildingsList">
+                                                @if (buildings != null)
+                                                {
+                                                    @foreach (var building in buildings)
                                                     {
-                                                        @foreach (var building in buildings)
-                                                        {
-                                                            <option value="@building.Name"></option>
-                                                        }
+                                                        <option value="@building.Name"></option>
                                                     }
-                                                </datalist>
-                                            </div>
-                                            <div class="form-text">Start typing to see suggestions or enter a new building name</div>
+                                                }
+                                            </datalist>
+                                            <div class="form-text">Start typing to see suggestions</div>
                                         </div>
 
-                                        <!-- Activity Selection -->
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
+                                            <label class="form-label">
                                                 <i class="fas fa-tasks me-1"></i>Activity Type <span class="text-danger">*</span>
                                             </label>
-                                            <InputSelect class="form-select form-select-lg" @bind-Value="roomModel.Activity">
+                                            <InputSelect class="form-select" @bind-Value="roomModel.Activity">
                                                 <option value="@ActivityType.Course">Course</option>
                                                 <option value="@ActivityType.Meeting">Meeting</option>
                                                 <option value="@ActivityType.Training">Training</option>
                                             </InputSelect>
-                                            <ValidationMessage For="() => roomModel.Activity" class="text-danger" />
-                                            <div class="form-text">Select the primary activity type for this room</div>
                                         </div>
 
-                                        <!-- Date and Time Section -->
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="mb-3">
-                                                    <label class="form-label fw-bold">
+                                                    <label class="form-label">
                                                         <i class="fas fa-calendar me-1"></i>Date <span class="text-danger">*</span>
                                                     </label>
                                                     <InputDate class="form-control" @bind-Value="roomModel.Date" />
-                                                    <ValidationMessage For="() => roomModel.Date" class="text-danger" />
-                                                    <div class="form-text">Select the date for room availability</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-3">
-                                                    <label class="form-label fw-bold">
+                                                    <label class="form-label">
                                                         <i class="fas fa-clock me-1"></i>Time <span class="text-danger">*</span>
                                                     </label>
-                                                    <InputText class="form-control" @bind-Value="timeInput" 
-                                                               type="time" placeholder="09:00" />
-                                                    <ValidationMessage For="() => roomModel.Time" class="text-danger" />
-                                                    <div class="form-text">Select the time for room availability</div>
+                                                    <InputText class="form-control" @bind-Value="timeInput" type="time" />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- Room Number and Capacity -->
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="mb-3">
-                                                    <label class="form-label fw-bold">
+                                                    <label class="form-label">
                                                         <i class="fas fa-door-open me-1"></i>Room Number
                                                     </label>
                                                     <InputText class="form-control" @bind-Value="roomModel.RoomNumber" 
-                                                               placeholder="e.g., A101, B-205" />
-                                                    <div class="form-text">Optional room identifier</div>
+                                                               placeholder="e.g., A101" />
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-3">
-                                                    <label class="form-label fw-bold">
+                                                    <label class="form-label">
                                                         <i class="fas fa-users me-1"></i>Capacity <span class="text-danger">*</span>
                                                     </label>
-                                                    <InputNumber class="form-control" @bind-Value="roomModel.Capacity" 
-                                                                 min="1" placeholder="Enter maximum capacity" />
-                                                    <ValidationMessage For="() => roomModel.Capacity" class="text-danger" />
+                                                    <InputNumber class="form-control" @bind-Value="roomModel.Capacity" min="1" />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- Description -->
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
+                                            <label class="form-label">
                                                 <i class="fas fa-align-left me-1"></i>Description
                                             </label>
                                             <InputTextArea class="form-control" rows="3" @bind-Value="roomModel.Description" 
-                                                           placeholder="Room description, equipment, special features..." />
-                                            <div class="form-text">Optional additional information</div>
+                                                           placeholder="Room description..." />
                                         </div>
                                     </div>
                                     
@@ -413,10 +371,10 @@
                                         <button type="submit" class="btn btn-primary" disabled="@isProcessing">
                                             @if (isProcessing)
                                             {
-                                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                <span class="spinner-border spinner-border-sm me-2"></span>
                                             }
                                             <i class="fas @(isEditMode ? "fa-save" : "fa-plus") me-1"></i>
-                                            @(isEditMode ? "Update Room" : "Add Room")
+                                            @(isEditMode ? "Update" : "Add Room")
                                         </button>
                                     </div>
                                 </EditForm>
@@ -430,80 +388,63 @@
         <!-- Booking Modal -->
         @if (showBookingModal)
         {
-            <!-- Modal Backdrop -->
             <div class="modal-backdrop fade show" @onclick="CloseBookingModal"></div>
-            
-            <!-- Modal Dialog -->
-            <div class="modal fade show d-block booking-modal" tabindex="-1" style="z-index: 1060;">
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1060;">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                     <div class="modal-content" @onclick:stopPropagation="true">
-                        <div class="modal-header bg-success text-white">
+                        <div class="modal-header modal-header-success">
                             <h5 class="modal-title">
                                 <i class="fas fa-calendar-plus me-2"></i>
                                 Book Room: @selectedRoom?.Name
                             </h5>
-                            <button type="button" class="btn-close btn-close-white" @onclick="CloseBookingModal" aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" @onclick="CloseBookingModal"></button>
                         </div>
                         
                         <EditForm Model="bookingModel" OnValidSubmit="CreateBooking" Context="bookingContext">
                             <DataAnnotationsValidator />
                             <div class="modal-body">
-                                <ValidationSummary class="text-danger mb-3" />
+                                <ValidationSummary class="alert alert-danger" role="alert" />
                                 
-                                <!-- Room Information -->
-                                <div class="alert alert-info mb-3">
+                                <div class="room-details-card mb-4">
                                     <h6><i class="fas fa-info-circle me-2"></i>Room Details</h6>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <p class="mb-1"><strong>Room:</strong> @selectedRoom?.Name</p>
-                                            <p class="mb-1"><strong>Building:</strong> @selectedRoom?.Building?.Name</p>
-                                            <p class="mb-0"><strong>Capacity:</strong> @selectedRoom?.Capacity people</p>
+                                            <p><strong>Room:</strong> @selectedRoom?.Name</p>
+                                            <p><strong>Building:</strong> @selectedRoom?.Building?.Name</p>
                                         </div>
                                         <div class="col-md-6">
-                                            <p class="mb-1"><strong>Activity:</strong> @selectedRoom?.Activity</p>
-                                            @if (!string.IsNullOrEmpty(selectedRoom?.RoomNumber))
-                                            {
-                                                <p class="mb-0"><strong>Room Number:</strong> @selectedRoom.RoomNumber</p>
-                                            }
+                                            <p><strong>Capacity:</strong> @selectedRoom?.Capacity people</p>
+                                            <p><strong>Activity:</strong> @selectedRoom?.Activity</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Booking Title -->
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">
+                                    <label class="form-label">
                                         <i class="fas fa-tag me-1"></i>Booking Title <span class="text-danger">*</span>
                                     </label>
                                     <InputText class="form-control" @bind-Value="bookingModel.Title" 
-                                               placeholder="Enter a title for your booking" />
-                                    <ValidationMessage For="() => bookingModel.Title" class="text-danger" />
+                                               placeholder="Enter booking title" />
                                 </div>
 
-                                <!-- Description -->
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">
+                                    <label class="form-label">
                                         <i class="fas fa-align-left me-1"></i>Description
                                     </label>
-                                    <InputTextArea class="form-control" rows="3" @bind-Value="bookingModel.Description" 
-                                                   placeholder="Describe the purpose or agenda of your booking" />
+                                    <InputTextArea class="form-control" rows="2" @bind-Value="bookingModel.Description" 
+                                                   placeholder="Booking description..." />
                                 </div>
 
-                                <!-- Date and Time -->
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-calendar me-1"></i>Start Date <span class="text-danger">*</span>
-                                            </label>
+                                            <label class="form-label">Start Date <span class="text-danger">*</span></label>
                                             <InputDate class="form-control" @bind-Value="startDate" />
-                                            <ValidationMessage For="() => bookingModel.StartDate" class="text-danger" />
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-clock me-1"></i>Start Time <span class="text-danger">*</span>
-                                            </label>
+                                            <label class="form-label">Start Time <span class="text-danger">*</span></label>
                                             <InputText class="form-control" @bind-Value="startTime" type="time" />
                                         </div>
                                     </div>
@@ -512,43 +453,23 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-calendar me-1"></i>End Date <span class="text-danger">*</span>
-                                            </label>
+                                            <label class="form-label">End Date <span class="text-danger">*</span></label>
                                             <InputDate class="form-control" @bind-Value="endDate" />
-                                            <ValidationMessage For="() => bookingModel.EndDate" class="text-danger" />
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-clock me-1"></i>End Time <span class="text-danger">*</span>
-                                            </label>
+                                            <label class="form-label">End Time <span class="text-danger">*</span></label>
                                             <InputText class="form-control" @bind-Value="endTime" type="time" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Attendee Count -->
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-users me-1"></i>Expected Attendees
-                                    </label>
+                                    <label class="form-label">Expected Attendees</label>
                                     <InputNumber class="form-control" @bind-Value="bookingModel.AttendeeCount" 
-                                                 min="1" max="@selectedRoom?.Capacity" placeholder="Number of people attending" />
-                                    @if (selectedRoom != null)
-                                    {
-                                        <div class="form-text">Maximum capacity: @selectedRoom.Capacity people</div>
-                                    }
-                                </div>
-
-                                <!-- Special Requirements -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">
-                                        <i class="fas fa-clipboard-list me-1"></i>Special Requirements
-                                    </label>
-                                    <InputTextArea class="form-control" rows="2" @bind-Value="bookingModel.SpecialRequirements" 
-                                                   placeholder="Any special equipment, setup, or requirements..." />
+                                                 min="1" max="@selectedRoom?.Capacity" />
+                                    <div class="form-text">Maximum: @selectedRoom?.Capacity people</div>
                                 </div>
                             </div>
                             
@@ -559,10 +480,9 @@
                                 <button type="submit" class="btn btn-success" disabled="@isProcessing">
                                     @if (isProcessing)
                                     {
-                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
                                     }
-                                    <i class="fas fa-check me-1"></i>
-                                    Create Booking
+                                    <i class="fas fa-check me-1"></i> Create Booking
                                 </button>
                             </div>
                         </EditForm>
@@ -575,12 +495,14 @@
         <div class="container-fluid">
             <div class="row justify-content-center">
                 <div class="col-md-6">
-                    <div class="text-center mt-5">
-                        <i class="fas fa-lock fa-4x text-muted mb-4"></i>
+                    <div class="empty-state glass-effect text-center py-5 mt-5">
+                        <div class="empty-icon mb-4">
+                            <i class="fas fa-lock"></i>
+                        </div>
                         <h2>Access Restricted</h2>
                         <p class="text-muted">You need to be logged in to access the rooms management system.</p>
                         <a href="/Account/Login" class="btn btn-primary">
-                            <i class="fas fa-sign-in-alt"></i> Login
+                            <i class="fas fa-sign-in-alt me-2"></i> Login
                         </a>
                     </div>
                 </div>
@@ -604,7 +526,6 @@
     private string buildingName = string.Empty;
     private string timeInput = "09:00";
     
-    // Booking form fields
     private DateTime startDate = DateTime.Today.AddDays(1);
     private DateTime endDate = DateTime.Today.AddDays(1);
     private string startTime = "09:00";
@@ -621,8 +542,6 @@
         {
             buildings = await BuildingService.GetAllBuildingsAsync();
             rooms = await RoomService.GetAllRoomsAsync();
-            
-            // Force a state refresh to ensure UI is updated with fresh data
             StateHasChanged();
         }
         catch (Exception ex)
@@ -633,9 +552,8 @@
 
     private void ShowAddRoomModal()
     {
-        // Create a completely fresh room model
         roomModel = new Room { 
-            Id = 0, // Ensure this is 0 for new rooms
+            Id = 0,
             Capacity = 1, 
             Activity = ActivityType.Course,
             Date = DateTime.Today,
@@ -653,7 +571,6 @@
 
     private void EditRoom(Room room)
     {
-        // Don't create a new Room object, just copy the properties we need
         roomModel = new Room();
         roomModel.Id = room.Id;
         roomModel.Name = room.Name;
@@ -678,7 +595,7 @@
     private void CloseModal()
     {
         showRoomModal = false;
-        roomModel = new Room(); // Create a fresh instance
+        roomModel = new Room();
         buildingName = string.Empty;
         timeInput = "09:00";
         isProcessing = false;
@@ -691,8 +608,6 @@
         try
         {
             selectedRoom = room;
-            
-            // Get current user ID immediately when showing the modal
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -704,7 +619,7 @@
 
             bookingModel = new Booking
             {
-                UserId = userId,  // Set user ID immediately
+                UserId = userId,
                 RoomId = room.Id,
                 Title = "",
                 Description = "",
@@ -713,7 +628,6 @@
                 Status = BookingStatus.Pending
             };
             
-            // Set default dates to tomorrow
             startDate = DateTime.Today.AddDays(1);
             endDate = DateTime.Today.AddDays(1);
             startTime = "09:00";
@@ -746,32 +660,27 @@
             return;
         }
 
-        // Validate required fields
         if (string.IsNullOrWhiteSpace(bookingModel.Title))
         {
             ShowStatusMessage("Booking title is required.", "error");
             return;
         }
 
-        // Validate user is still authenticated
         if (string.IsNullOrEmpty(bookingModel.UserId))
         {
-            ShowStatusMessage("User authentication expired. Please refresh the page and try again.", "error");
+            ShowStatusMessage("User authentication expired. Please refresh the page.", "error");
             return;
         }
 
-        // Parse and validate times
         if (!TimeSpan.TryParse(startTime, out var startTimeSpan) || !TimeSpan.TryParse(endTime, out var endTimeSpan))
         {
             ShowStatusMessage("Invalid time format.", "error");
             return;
         }
 
-        // Combine dates and times
         var startDateTime = startDate.Date.Add(startTimeSpan);
         var endDateTime = endDate.Date.Add(endTimeSpan);
 
-        // Validate booking times
         if (startDateTime >= endDateTime)
         {
             ShowStatusMessage("End time must be after start time.", "error");
@@ -784,7 +693,6 @@
             return;
         }
 
-        // Validate attendee count
         if (bookingModel.AttendeeCount.HasValue && bookingModel.AttendeeCount > selectedRoom.Capacity)
         {
             ShowStatusMessage($"Attendee count cannot exceed room capacity of {selectedRoom.Capacity}.", "error");
@@ -796,16 +704,13 @@
 
         try
         {
-            // Set final booking properties
             bookingModel.RoomId = selectedRoom.Id;
             bookingModel.StartDate = startDateTime;
             bookingModel.EndDate = endDateTime;
             bookingModel.Status = BookingStatus.Pending;
 
-            // Create the booking
             var createdBooking = await BookingService.CreateBookingAsync(bookingModel);
-            
-            ShowStatusMessage($"Booking '{createdBooking.Title}' created successfully! You can view it in your bookings page.", "success");
+            ShowStatusMessage($"Booking '{createdBooking.Title}' created successfully!", "success");
             CloseBookingModal();
         }
         catch (InvalidOperationException ex)
@@ -825,7 +730,6 @@
 
     private async Task SaveRoom()
     {
-        // Basic validation
         if (string.IsNullOrWhiteSpace(roomModel.Name))
         {
             ShowStatusMessage("Room name is required.", "error");
@@ -844,15 +748,9 @@
             return;
         }
 
-        if (roomModel.Date == DateTime.MinValue)
-        {
-            ShowStatusMessage("Date is required.", "error");
-            return;
-        }
-
         if (!TimeSpan.TryParse(timeInput, out var time))
         {
-            ShowStatusMessage("Invalid time format. Please use HH:mm.", "error");
+            ShowStatusMessage("Invalid time format.", "error");
             return;
         }
         roomModel.Time = time;
@@ -862,7 +760,6 @@
 
         try
         {
-            // Find or create building
             var existingBuilding = buildings?.FirstOrDefault(b => b.Name.Equals(buildingName, StringComparison.OrdinalIgnoreCase));
             if (existingBuilding != null)
             {
@@ -870,7 +767,6 @@
             }
             else
             {
-                // Create new building
                 var newBuilding = new Building 
                 { 
                     Name = buildingName, 
@@ -881,33 +777,22 @@
                 };
                 var createdBuilding = await BuildingService.CreateBuildingAsync(newBuilding);
                 roomModel.BuildingId = createdBuilding.Id;
-                
-                // Reload buildings to include the new one
                 buildings = await BuildingService.GetAllBuildingsAsync();
             }
 
-            // Ensure BuildingId is set properly
             if (roomModel.BuildingId <= 0)
             {
-                ShowStatusMessage("Unable to determine building ID. Please try again.", "error");
+                ShowStatusMessage("Unable to determine building ID.", "error");
                 return;
             }
 
             if (isEditMode)
             {
-                // Ensure we're working with a valid room ID
-                if (roomModel.Id <= 0)
-                {
-                    ShowStatusMessage("Invalid room ID for update operation.", "error");
-                    return;
-                }
-                
                 await RoomService.UpdateRoomAsync(roomModel);
                 ShowStatusMessage($"Room '{roomModel.Name}' updated successfully!", "success");
             }
             else
             {
-                // For new rooms, ensure ID is 0
                 roomModel.Id = 0;
                 await RoomService.CreateRoomAsync(roomModel);
                 ShowStatusMessage($"Room '{roomModel.Name}' created successfully!", "success");
@@ -929,28 +814,24 @@
 
     private async Task DeleteRoom(Room room)
     {
-        if (await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to permanently delete '{room.Name}'? This action cannot be undone."))
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete '{room.Name}'? This cannot be undone."))
         {
             try
             {
                 var result = await RoomService.DeleteRoomAsync(room.Id);
                 if (result)
                 {
-                    ShowStatusMessage($"Room '{room.Name}' permanently deleted successfully!", "success");
+                    ShowStatusMessage($"Room '{room.Name}' deleted!", "success");
                     await LoadData();
                 }
                 else
                 {
-                    ShowStatusMessage("Failed to delete room. Room not found.", "error");
+                    ShowStatusMessage("Failed to delete room.", "error");
                 }
-            }
-            catch (InvalidOperationException ex)
-            {
-                ShowStatusMessage($"Cannot delete room: {ex.Message}", "error");
             }
             catch (Exception ex)
             {
-                ShowStatusMessage($"Error deleting room: {ex.Message}", "error");
+                ShowStatusMessage($"Error: {ex.Message}", "error");
             }
         }
     }
@@ -961,17 +842,13 @@
         statusMessageType = type;
         StateHasChanged();
 
-        // Auto-hide success messages after 5 seconds
         if (type == "success")
         {
-            _ = Task.Delay(5000).ContinueWith(_ => 
+            _ = Task.Delay(5000).ContinueWith(_ => InvokeAsync(() =>
             {
-                InvokeAsync(() =>
-                {
-                    ClearStatusMessage();
-                    StateHasChanged();
-                });
-            });
+                ClearStatusMessage();
+                StateHasChanged();
+            }));
         }
     }
 
@@ -981,107 +858,11 @@
         StateHasChanged();
     }
 
-    private string GetActivityIcon(ActivityType activity)
+    private string GetActivityIcon(ActivityType activity) => activity switch
     {
-        return activity switch
-        {
-            ActivityType.Course => "fa-graduation-cap",
-            ActivityType.Meeting => "fa-handshake",
-            ActivityType.Training => "fa-dumbbell",
-            _ => "fa-tasks"
-        };
-    }
-
-    private string GetActivityColor(ActivityType activity)
-    {
-        return activity switch
-        {
-            ActivityType.Course => "text-success",
-            ActivityType.Meeting => "text-primary",
-            ActivityType.Training => "text-warning",
-            _ => "text-secondary"
-        };
-    }
+        ActivityType.Course => "fa-graduation-cap",
+        ActivityType.Meeting => "fa-handshake",
+        ActivityType.Training => "fa-dumbbell",
+        _ => "fa-tasks"
+    };
 }
-
-<style>
-    .room-card {
-        transition: all 0.3s ease;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .room-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    }
-
-    .modal-backdrop {
-        background-color: rgba(0, 0, 0, 0.5);
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1040;
-    }
-
-    .form-label.fw-bold i {
-        color: #6c757d;
-    }
-
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .room-info i {
-        width: 20px;
-    }
-
-    .feature-item {
-        text-align: center;
-        padding: 20px;
-        border-radius: 8px;
-        background: #f8f9fa;
-        height: 100%;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .feature-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    /* Booking Modal Specific Styles */
-    .booking-modal .modal-header {
-        background: linear-gradient(135deg, #28a745, #20c997);
-    }
-
-    .booking-modal .alert-info {
-        border-left: 4px solid #17a2b8;
-        background-color: #f8f9fa;
-    }
-
-    .booking-modal .form-control:focus {
-        border-color: #28a745;
-        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
-    }
-
-    .booking-modal .btn-success {
-        background: linear-gradient(135deg, #28a745, #20c997);
-        border: none;
-    }
-
-    .booking-modal .btn-success:hover {
-        background: linear-gradient(135deg, #218838, #1c9b84);
-        transform: translateY(-1px);
-    }
-
-    /* Status message animations */
-    .alert {
-        animation: slideDown 0.3s ease-out;
-    }
-
-    
-</style>

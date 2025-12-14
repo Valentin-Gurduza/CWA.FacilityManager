@@ -1,0 +1,84 @@
+/* ===== USER MANAGEMENT PAGE STYLES ===== */
+
+/* Page container */
+.user-management-page {
+    max-width: 100%;
+}
+
+/* Allow overflow for dropdowns */
+.overflow-visible {
+    overflow: visible !important;
+}
+
+/* Table wrapper */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Minimum width helper */
+.min-width-0 {
+    min-width: 0;
+}
+
+/* Table styling */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    white-space: nowrap;
+    font-size: 0.8125rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Button group in table */
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Toast notifications */
+.toast-container {
+    z-index: 1100;
+}
+
+/* Modal styling */
+.modal {
+    z-index: 1055;
+}
+
+.modal-backdrop {
+    z-index: 1050;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .user-management-page .card-body {
+        padding: 0.75rem;
+    }
+    
+    .user-management-page .input-group {
+        font-size: 0.875rem;
+    }
+    
+    .user-management-page .btn {
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .btn-group .btn {
+        padding: 0.2rem 0.4rem;
+    }
+}
+
+/* Flex shrink helper */
+.flex-shrink-0 {
+    flex-shrink: 0;
+}
+
+/* Badge spacing in table */
+.table .badge {
+    font-size: 0.7rem;
+}
