@@ -713,6 +713,142 @@ select.form-select:focus {
     border-radius: var(--radius-xl);
 }
 
+/* Table Light Header - Dark Theme Override */
+.table-light,
+thead.table-light,
+thead.table-light th,
+thead.table-light td,
+.table-light > tr > th,
+.table-light > tr > td {
+    background: linear-gradient(180deg, var(--tertiary-bg) 0%, var(--card-bg) 100%) !important;
+    background-color: var(--tertiary-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-light) !important;
+}
+
+/* ===== TABLE-SM DARK THEME FIX ===== */
+/* Target all table-sm variants with maximum specificity */
+table.table-sm tr td,
+table.table-sm tr th,
+table.table-sm tbody tr td,
+table.table-sm tbody tr th,
+.table.table-sm tr td,
+.table.table-sm tr th,
+.table.table-sm tbody tr td,
+.table.table-sm tbody tr th,
+.table-sm > tr > td,
+.table-sm > tr > th,
+.table-sm > tbody > tr > td,
+.table-sm > tbody > tr > th {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border-light) !important;
+    padding: 0.5rem !important;
+}
+
+table.table-sm tr td strong,
+table.table-sm tbody tr td strong,
+.table.table-sm tr td strong,
+.table.table-sm tbody tr td strong,
+.table-sm > tr > td strong,
+.table-sm > tbody > tr > td strong {
+    color: var(--text-primary) !important;
+}
+
+/* ===== MODAL TABLE OVERRIDES - NUCLEAR OPTION ===== */
+.modal table,
+.modal .table,
+.modal-body table,
+.modal-body .table,
+.modal-content table,
+.modal-content .table,
+.modal-dialog table,
+.modal-dialog .table {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.modal table tr,
+.modal table tbody,
+.modal table thead,
+.modal table td,
+.modal table th,
+.modal .table tr,
+.modal .table tbody,
+.modal .table thead,
+.modal .table td,
+.modal .table th,
+.modal-body table tr,
+.modal-body table tbody,
+.modal-body table thead,
+.modal-body table td,
+.modal-body table th,
+.modal-body .table tr,
+.modal-body .table tbody,
+.modal-body .table thead,
+.modal-body .table td,
+.modal-body .table th,
+.modal-content table tr,
+.modal-content table td,
+.modal-content table th,
+.modal-content .table tr,
+.modal-content .table td,
+.modal-content .table th {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: var(--border-light) !important;
+}
+
+.modal table td,
+.modal .table td,
+.modal-body table td,
+.modal-body .table td,
+.modal-content table td,
+.modal-content .table td {
+    color: var(--text-secondary) !important;
+}
+
+.modal table strong,
+.modal table td strong,
+.modal .table strong,
+.modal .table td strong,
+.modal-body table strong,
+.modal-body table td strong,
+.modal-body .table strong,
+.modal-body .table td strong,
+.modal-content table strong,
+.modal-content table td strong,
+.modal-content .table strong,
+.modal-content .table td strong {
+    color: var(--text-primary) !important;
+}
+
+/* Target by attribute selector as fallback */
+[class*="modal"] table td,
+[class*="modal"] table th,
+[class*="modal"] table tr,
+[class*="modal"] .table td,
+[class*="modal"] .table th,
+[class*="modal"] .table tr,
+div[class*="modal"] table td,
+div[class*="modal"] table th,
+div[class*="modal"] .table td,
+div[class*="modal"] .table th {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: var(--text-secondary) !important;
+}
+
+[class*="modal"] table strong,
+[class*="modal"] table td strong,
+[class*="modal"] .table strong,
+[class*="modal"] .table td strong {
+    color: var(--text-primary) !important;
+}
+
 /* Fixed position dropdown for tables - escapes all overflow containers */
 .dropdown-menu[data-bs-popper] {
     z-index: 1055;
@@ -779,6 +915,14 @@ select.form-select:focus {
     border: 1px solid rgba(99, 102, 241, 0.3);
 }
 .alert-primary::before { background: var(--accent-primary); }
+
+/* Alert Light - Dark Theme Override */
+.alert-light {
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.15) 0%, rgba(148, 163, 184, 0.05) 100%);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-secondary);
+}
+.alert-light::before { background: var(--text-muted); }
 
 .alert-link {
     color: inherit;
@@ -940,13 +1084,6 @@ select.form-select:focus {
     color: var(--text-secondary);
 }
 
-.modal-footer {
-    background: linear-gradient(180deg, var(--modal-bg) 0%, var(--tertiary-bg) 100%);
-    border-top: 1px solid var(--border-light);
-    padding: var(--space-4) var(--space-6);
-    gap: var(--space-3);
-}
-
 /* ===== NAVIGATION ===== */
 .navbar {
     background: var(--gradient-secondary);
@@ -1022,7 +1159,7 @@ select.form-select:focus {
 .progress-bar {
     background: var(--gradient-accent);
     border-radius: var(--radius-full);
-    transition: width var(--transition-slow);
+    transition: width var('--transition-slow');
 }
 
 /* ===== SPINNERS ===== */
